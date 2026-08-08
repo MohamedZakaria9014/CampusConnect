@@ -139,7 +139,7 @@ export default function ChatRoomScreen() {
                 <Text style={[styles.targetName, { color: colors.text }]}>{targetUser?.full_name || 'Student'}</Text>
                 {targetUser?.is_top_student && <TopStudentBadge size="sm" showText={false} />}
               </View>
-              <Text style={[styles.targetStatus, { color: colors.accent }]}>Online • Active Peer</Text>
+              <Text style={[styles.targetStatus, { color: colors.accent }]}>Online · Active Peer</Text>
             </View>
           </TouchableOpacity>
         </View>
@@ -161,7 +161,7 @@ export default function ChatRoomScreen() {
           <View style={[styles.attachedImgBox, { backgroundColor: colors.surfaceSecondary }]}>
             <Image source={{ uri: attachedImageUri }} style={styles.attachedImg} />
             <TouchableOpacity onPress={() => setAttachedImageUri(null)} style={styles.removeImgBtn}>
-              <Text style={{ color: '#FFFFFF', fontWeight: 'bold' }}>✕</Text>
+              <Text style={{ color: '#FFFFFF', fontWeight: 'bold' }}>Γ£ò</Text>
             </TouchableOpacity>
           </View>
         )}

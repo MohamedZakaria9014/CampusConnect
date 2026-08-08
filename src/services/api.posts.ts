@@ -20,16 +20,11 @@ export async function fetchPosts(params: FetchPostsParams = {}): Promise<Post[]>
     .select(`
       *,
       author:profiles(*, university:universities(*)),
-      university:universities(*),
-      course:courses(*)
+      university:universities(*)
     `);
 
   if (category && category !== 'All') {
     query = query.eq('category', category);
-  }
-
-  if (courseId) {
-    query = query.eq('course_id', courseId);
   }
 
   if (universityId) {
@@ -41,7 +36,23 @@ export async function fetchPosts(params: FetchPostsParams = {}): Promise<Post[]>
   }
 
   if (searchQuery) {
-    query = query.or(`title.ilike.%${searchQuery}%,content.ilike.%${searchQuery}%`);
+    const q = searchQuery.trim();
+    const { data: matchedUnis } = await supabase
+      .from('universities')
+      .select('id')
+      .or(`name.ilike.%${q}%,short_name.ilike.%${q}%`);
+
+    const matchedUniIds = matchedUnis?.map((u) => u.id) || [];
+
+    if (matchedUniIds.length > 0) {
+      query = query.or(
+        `title.ilike.%${q}%,content.ilike.%${q}%,category.ilike.%${q}%,course_code.ilike.%${q}%,code_language.ilike.%${q}%,university_id.in.(${matchedUniIds.join(',')})`
+      );
+    } else {
+      query = query.or(
+        `title.ilike.%${q}%,content.ilike.%${q}%,category.ilike.%${q}%,course_code.ilike.%${q}%,code_language.ilike.%${q}%`
+      );
+    }
   }
 
   if (filter === 'unanswered') {
@@ -72,8 +83,7 @@ export async function fetchPostById(id: string): Promise<Post | null> {
     .select(`
       *,
       author:profiles(*, university:universities(*)),
-      university:universities(*),
-      course:courses(*)
+      university:universities(*)
     `)
     .eq('id', id)
     .maybeSingle();
@@ -86,27 +96,32 @@ export async function fetchPostById(id: string): Promise<Post | null> {
 }
 
 export async function createPost(postData: Partial<Post>): Promise<Post> {
+  const customCourse = postData.course_code?.trim();
+  const postTags = [...(postData.tags || [])];
+  if (customCourse && !postTags.includes(customCourse)) {
+    postTags.unshift(customCourse);
+  }
+
+  const insertPayload = {
+    author_id: postData.author_id,
+    university_id: postData.university_id,
+    course_code: customCourse || undefined,
+    category: postData.category,
+    title: postData.title,
+    content: postData.content,
+    code_snippet: postData.code_snippet,
+    code_language: postData.code_language,
+    image_urls: postData.image_urls || [],
+    tags: postTags,
+  };
+
   const { data, error } = await supabase
     .from('posts')
-    .insert([
-      {
-        author_id: postData.author_id,
-        university_id: postData.university_id,
-        course_id: postData.course_id,
-        category: postData.category,
-        title: postData.title,
-        content: postData.content,
-        code_snippet: postData.code_snippet,
-        code_language: postData.code_language,
-        image_urls: postData.image_urls || [],
-        tags: postData.tags || [],
-      },
-    ])
+    .insert([insertPayload])
     .select(`
       *,
       author:profiles(*, university:universities(*)),
-      university:universities(*),
-      course:courses(*)
+      university:universities(*)
     `)
     .single();
 
@@ -133,3 +148,37 @@ export async function toggleSavePost(postId: string, userId: string, currentlySa
     await supabase.from('saved_posts').insert({ post_id: postId, user_id: userId });
   }
 }
+
+export async function fetchSavedPosts(userId: string): Promise<Post[]> {
+  if (!userId) return [];
+  const { data: savedRows, error: savedErr } = await supabase
+    .from('saved_posts')
+    .select('post_id')
+    .eq('user_id', userId);
+
+  if (savedErr || !savedRows || savedRows.length === 0) return [];
+
+  const postIds = savedRows.map((s) => s.post_id);
+  const { data, error } = await supabase
+    .from('posts')
+    .select(`
+      *,
+      author:profiles(*, university:universities(*)),
+      university:universities(*),
+      course:courses(*)
+    `)
+    .in('id', postIds)
+    .order('created_at', { ascending: false });
+
+  if (error) return [];
+  return (data || []) as Post[];
+}
+
+export async function deletePost(postId: string): Promise<void> {
+  const { error } = await supabase.from('posts').delete().eq('id', postId);
+  if (error) {
+    console.error('Error deleting post from Supabase:', error.message);
+    throw error;
+  }
+}
+

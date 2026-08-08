@@ -11,10 +11,12 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
-import { ArrowLeft, MessageSquare, Send, Code, Award, CheckCircle2 } from 'lucide-react-native';
+import { ArrowLeft, MessageSquare, Send, Code, Award, CheckCircle2, Image as ImageIcon, X } from 'lucide-react-native';
+import * as ImagePicker from 'expo-image-picker';
+import { uploadImageToSupabase } from '../../../src/services/storage';
 import { useThemeStore } from '../../../src/store/useThemeStore';
 import { useAuthStore } from '../../../src/store/useAuthStore';
 import { fetchPostById } from '../../../src/services/api.posts';
@@ -24,6 +26,7 @@ import { Avatar } from '../../../src/components/ui/Avatar';
 import { TopStudentBadge } from '../../../src/components/ui/TopStudentBadge';
 import { CodeBlock } from '../../../src/components/ui/CodeBlock';
 import { Button } from '../../../src/components/ui/Button';
+import { ImageViewerModal } from '../../../src/components/ui/ImageViewerModal';
 import { timeAgo, formatCount } from '../../../src/utils/formatters';
 import { SPACING, RADIUS } from '../../../src/constants/theme';
 import { AnswerSortOption, CommentAnswer } from '../../../src/types/models';
@@ -39,6 +42,8 @@ export default function PostDetailScreen() {
   const [codeSnippet, setCodeSnippet] = useState('');
   const [codeLanguage, setCodeLanguage] = useState('cpp');
   const [showCode, setShowCode] = useState(false);
+  const [answerLocalImages, setAnswerLocalImages] = useState<string[]>([]);
+  const [viewerImageUrl, setViewerImageUrl] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -58,22 +63,45 @@ export default function PostDetailScreen() {
     setRefreshing(false);
   };
 
+  const handlePickAnswerImage = async () => {
+    try {
+      const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!perm.granted) return;
+      const result = await ImagePicker.launchImageLibraryAsync({
+        quality: 0.8,
+        allowsEditing: false,
+      });
+      if (!result.canceled && result.assets.length > 0) {
+        setAnswerLocalImages((prev) => [...prev, result.assets[0].uri]);
+      }
+    } catch (e) {
+      console.warn('Pick image error:', e);
+    }
+  };
+
   const handlePostAnswer = async () => {
-    if (!answerText.trim()) return;
+    if (!answerText.trim() && answerLocalImages.length === 0) return;
     setIsSubmitting(true);
     try {
+      // Upload pending local images to Supabase Storage only upon comment submit
+      const uploadedUrls = answerLocalImages.length > 0
+        ? await Promise.all(answerLocalImages.map((uri) => uploadImageToSupabase(uri, 'posts', 'answer_images')))
+        : undefined;
+
       await createAnswer({
         post_id: id as string,
         author_id: user?.id || 'u1111111-1111-1111-1111-111111111111',
         content: answerText,
         code_snippet: codeSnippet || undefined,
         code_language: codeLanguage,
+        image_urls: uploadedUrls,
         author: user || undefined,
       });
 
       setAnswerText('');
       setCodeSnippet('');
       setShowCode(false);
+      setAnswerLocalImages([]);
       refetchAnswers();
       refetchPost();
     } catch (e) {
@@ -83,9 +111,11 @@ export default function PostDetailScreen() {
     }
   };
 
+  const insets = useSafeAreaInsets();
+
   if (postLoading || !post) {
     return (
-      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+      <View style={[styles.container, { backgroundColor: colors.background, paddingTop: insets.top }]}>
         <View style={styles.topHeader}>
           <TouchableOpacity onPress={() => router.back()}>
             <ArrowLeft size={24} color={colors.text} />
@@ -94,14 +124,14 @@ export default function PostDetailScreen() {
         <View style={styles.loadingCenter}>
           <Text style={{ color: colors.textSecondary }}>Loading question...</Text>
         </View>
-      </SafeAreaView>
+      </View>
     );
   }
 
   const author = post.author;
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+    <View style={[styles.container, { backgroundColor: colors.background, paddingTop: insets.top }]}>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
         {/* Top Bar Header */}
         <View style={[styles.topHeader, { borderColor: colors.border }]}>
@@ -128,16 +158,16 @@ export default function PostDetailScreen() {
                   {author?.is_top_student && <TopStudentBadge size="sm" />}
                 </View>
                 <Text style={[styles.subMeta, { color: colors.textSecondary }]}>
-                  @{author?.username} • {author?.university?.short_name || 'CU'} • {author?.major}
+                  @{author?.username} · {author?.university?.short_name || 'CU'} · {author?.major}
                 </Text>
               </View>
               <Text style={[styles.timeAgo, { color: colors.textMuted }]}>{timeAgo(post.created_at)}</Text>
             </View>
 
             <View style={styles.pillRow}>
-              {post.course && (
+              {post.course_code && (
                 <View style={[styles.coursePill, { backgroundColor: colors.primaryLight + '20' }]}>
-                  <Text style={[styles.coursePillText, { color: colors.primary }]}>{post.course.code}</Text>
+                  <Text style={[styles.coursePillText, { color: colors.primary }]}>{post.course_code}</Text>
                 </View>
               )}
               <View style={[styles.categoryPill, { backgroundColor: colors.surfaceSecondary }]}>
@@ -219,8 +249,32 @@ export default function PostDetailScreen() {
         </ScrollView>
 
         {/* Sticky Answer Input Bar */}
-        <View style={[styles.inputBar, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+        <View style={[styles.inputBar, { backgroundColor: colors.surface, borderColor: colors.border, paddingBottom: Math.max(insets.bottom, 12) }]}>
+          {/* Pending Answer Images Preview */}
+          {answerLocalImages.length > 0 && (
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 8 }}>
+              {answerLocalImages.map((uri, idx) => (
+                <View key={idx} style={styles.thumbContainer}>
+                  <TouchableOpacity onPress={() => setViewerImageUrl(uri)} activeOpacity={0.85}>
+                    <Image source={{ uri }} style={styles.answerThumb} />
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() => setAnswerLocalImages((prev) => prev.filter((_, i) => i !== idx))}
+                    style={styles.removeThumbBtn}
+                  >
+                    <X size={10} color="#FFFFFF" />
+                  </TouchableOpacity>
+                </View>
+              ))}
+            </ScrollView>
+          )}
+
           <View style={styles.inputRow}>
+            {/* User Avatar on Left Corner */}
+            <View style={{ marginRight: 8 }}>
+              <Avatar url={user?.avatar_url} name={user?.full_name || 'You'} size={34} />
+            </View>
+
             <TextInput
               placeholder="Write a clear academic solution..."
               placeholderTextColor={colors.textMuted}
@@ -229,15 +283,21 @@ export default function PostDetailScreen() {
               multiline
               style={[styles.answerInput, { color: colors.text }]}
             />
+
+            <TouchableOpacity onPress={handlePickAnswerImage} style={styles.codeToggleBtn}>
+              <ImageIcon size={20} color={answerLocalImages.length > 0 ? colors.primary : colors.icon} />
+            </TouchableOpacity>
+
             <TouchableOpacity onPress={() => setShowCode(!showCode)} style={styles.codeToggleBtn}>
               <Code size={20} color={showCode ? colors.primary : colors.icon} />
             </TouchableOpacity>
+
             <TouchableOpacity
               onPress={handlePostAnswer}
-              disabled={isSubmitting || !answerText.trim()}
-              style={[styles.sendBtn, { backgroundColor: answerText.trim() ? colors.primary : colors.surfaceSecondary }]}
+              disabled={isSubmitting || (!answerText.trim() && answerLocalImages.length === 0)}
+              style={[styles.sendBtn, { backgroundColor: answerText.trim() || answerLocalImages.length > 0 ? colors.primary : colors.surfaceSecondary }]}
             >
-              <Send size={18} color={answerText.trim() ? '#FFFFFF' : colors.textMuted} />
+              <Send size={18} color={answerText.trim() || answerLocalImages.length > 0 ? '#FFFFFF' : colors.textMuted} />
             </TouchableOpacity>
           </View>
 
@@ -255,7 +315,13 @@ export default function PostDetailScreen() {
           )}
         </View>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+
+      <ImageViewerModal
+        visible={!!viewerImageUrl}
+        imageUrl={viewerImageUrl}
+        onClose={() => setViewerImageUrl(null)}
+      />
+    </View>
   );
 }
 
@@ -436,5 +502,25 @@ const styles = StyleSheet.create({
     fontSize: 13,
     minHeight: 60,
     fontFamily: Platform.OS === 'ios' ? 'Courier New' : 'monospace',
+  },
+  thumbContainer: {
+    position: 'relative',
+    marginRight: 8,
+  },
+  answerThumb: {
+    width: 50,
+    height: 50,
+    borderRadius: 8,
+  },
+  removeThumbBtn: {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: '#EF4444',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });

@@ -5,6 +5,7 @@ export const CATEGORIES = [
   { id: 'Physics', label: 'Physics', icon: 'zap' },
   { id: 'Chemistry', label: 'Chemistry', icon: 'flask-conical' },
   { id: 'Engineering', label: 'Engineering', icon: 'cpu' },
+  { id: 'Medicine', label: 'Medicine', icon: 'stethoscope' },
   { id: 'Business', label: 'Business', icon: 'briefcase' },
   { id: 'Other', label: 'Other', icon: 'more-horizontal' },
 ] as const;

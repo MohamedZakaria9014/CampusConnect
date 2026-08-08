@@ -6,15 +6,17 @@ import {
   ScrollView,
   TouchableOpacity,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { Search, GraduationCap, BookOpen, TrendingUp, ChevronRight } from 'lucide-react-native';
+import { Search, GraduationCap, BookOpen, TrendingUp, ChevronRight, MapPin, HelpCircle } from 'lucide-react-native';
 import { useQuery } from '@tanstack/react-query';
 import { useThemeStore } from '../../../src/store/useThemeStore';
 import { Input } from '../../../src/components/ui/Input';
 import { Avatar } from '../../../src/components/ui/Avatar';
 import { TopStudentBadge } from '../../../src/components/ui/TopStudentBadge';
-import { fetchUniversities, fetchCourses, searchStudents } from '../../../src/services/api.explore';
+import { fetchUniversities, fetchMajors, searchStudents } from '../../../src/services/api.explore';
+import { fetchPosts } from '../../../src/services/api.posts';
+import { PostCard } from '../../../src/components/features/PostCard';
 import { SPACING, RADIUS } from '../../../src/constants/theme';
 
 export default function ExploreScreen() {
@@ -22,7 +24,7 @@ export default function ExploreScreen() {
   const router = useRouter();
 
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeTab, setActiveTab] = useState<'all' | 'universities' | 'courses' | 'students'>('all');
+  const [activeTab, setActiveTab] = useState<'all' | 'questions' | 'universities' | 'courses' | 'students'>('all');
 
   const { data: universities } = useQuery({
     queryKey: ['universities'],
@@ -30,13 +32,19 @@ export default function ExploreScreen() {
   });
 
   const { data: courses } = useQuery({
-    queryKey: ['courses'],
-    queryFn: () => fetchCourses(),
+    queryKey: ['majors'],
+    queryFn: () => fetchMajors(),
   });
 
   const { data: students } = useQuery({
     queryKey: ['searchStudents', searchQuery],
     queryFn: () => searchStudents(searchQuery),
+    enabled: searchQuery.trim().length > 0,
+  });
+
+  const { data: searchedPosts } = useQuery({
+    queryKey: ['searchPosts', searchQuery],
+    queryFn: () => fetchPosts({ searchQuery }),
     enabled: searchQuery.trim().length > 0,
   });
 
@@ -59,19 +67,20 @@ export default function ExploreScreen() {
   );
 
   const filteredCourses = (courses || []).filter(
-    (c) =>
+    (c: any) =>
       !q ||
       c.name.toLowerCase().includes(q) ||
-      c.code.toLowerCase().includes(q) ||
-      c.department.toLowerCase().includes(q)
+      c.category.toLowerCase().includes(q)
   );
 
   const filteredTopics = TRENDING_TOPICS.filter(
     (t) => !q || t.title.toLowerCase().includes(q)
   );
 
+  const insets = useSafeAreaInsets();
+
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
+    <View style={[styles.container, { backgroundColor: colors.background, paddingTop: insets.top }]}>
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         {/* Header Title & Search Input */}
         <View style={styles.header}>
@@ -89,8 +98,9 @@ export default function ExploreScreen() {
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tabScroll}>
           {[
             { id: 'all', label: 'All' },
+            { id: 'questions', label: `Questions (${searchQuery.trim() ? searchedPosts?.length || 0 : 'All'})` },
             { id: 'universities', label: `Universities (${filteredUniversities.length})` },
-            { id: 'courses', label: `Courses (${filteredCourses.length})` },
+            { id: 'courses', label: `Subjects (${filteredCourses.length})` },
             { id: 'students', label: 'Students' },
           ].map((tab) => {
             const isSelected = activeTab === tab.id;
@@ -111,8 +121,24 @@ export default function ExploreScreen() {
           })}
         </ScrollView>
 
+        {/* Questions Search Results */}
+        {(activeTab === 'all' || activeTab === 'questions') && searchedPosts && searchedPosts.length > 0 && (
+          <View style={styles.sectionMargin}>
+            <Text style={[styles.sectionTitleText, { color: colors.text }]}>
+              Questions Found ({searchedPosts.length})
+            </Text>
+            {searchedPosts.map((post) => (
+              <PostCard
+                key={post.id}
+                post={post}
+                onPress={() => router.push(`/(main)/post/${post.id}` as any)}
+              />
+            ))}
+          </View>
+        )}
+
         {/* Trending Academic Topics */}
-        {(activeTab === 'all' || activeTab === 'courses') && filteredTopics.length > 0 && (
+        {(activeTab === 'all' || activeTab === 'courses') && !searchQuery.trim() && filteredTopics.length > 0 && (
           <View style={[styles.cardSection, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <View style={styles.sectionHeader}>
               <TrendingUp size={18} color={colors.primary} />
@@ -120,7 +146,11 @@ export default function ExploreScreen() {
             </View>
 
             {filteredTopics.map((topic, idx) => (
-              <TouchableOpacity key={idx} style={styles.topicRow}>
+              <TouchableOpacity
+                key={idx}
+                onPress={() => setSearchQuery(topic.title.split(' ')[0])}
+                style={styles.topicRow}
+              >
                 <View>
                   <Text style={[styles.topicTitle, { color: colors.text }]}>{topic.title}</Text>
                   <Text style={[styles.topicCount, { color: colors.textSecondary }]}>{topic.count}</Text>
@@ -150,7 +180,12 @@ export default function ExploreScreen() {
                   <Text style={[styles.uniName, { color: colors.text }]}>
                     {uni.name} ({uni.short_name})
                   </Text>
-                  <Text style={[styles.uniSub, { color: colors.textSecondary }]}>📍 {uni.location}</Text>
+                  {uni.location ? (
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 }}>
+                      <MapPin size={12} color={colors.textSecondary} />
+                      <Text style={[styles.uniSub, { color: colors.textSecondary, marginTop: 0 }]}>{uni.location}</Text>
+                    </View>
+                  ) : null}
                 </View>
                 <ChevronRight size={18} color={colors.icon} />
               </TouchableOpacity>
@@ -158,16 +193,15 @@ export default function ExploreScreen() {
           </View>
         )}
 
-        {/* Courses List */}
+        {/* Majors / Subjects List */}
         {(activeTab === 'all' || activeTab === 'courses') && (
           <View style={styles.sectionMargin}>
             <Text style={[styles.sectionTitleText, { color: colors.text }]}>
-              Academic Courses ({filteredCourses.length})
+              Academic Subjects ({filteredCourses.length})
             </Text>
-            {filteredCourses.map((course) => (
-              <TouchableOpacity
+            {filteredCourses.map((course: any) => (
+              <View
                 key={course.id}
-                onPress={() => router.push({ pathname: '/(main)/explore/course/[id]', params: { id: course.id } } as any)}
                 style={[styles.courseCard, { backgroundColor: colors.surface, borderColor: colors.border }]}
               >
                 <View style={[styles.courseIconBox, { backgroundColor: colors.secondary + '20' }]}>
@@ -175,14 +209,13 @@ export default function ExploreScreen() {
                 </View>
                 <View style={styles.courseMeta}>
                   <Text style={[styles.courseCode, { color: colors.text }]}>
-                    {course.code} - {course.name}
+                    {course.name}
                   </Text>
                   <Text style={[styles.courseDept, { color: colors.textSecondary }]}>
-                    {course.department} • {course.university?.short_name || 'CU'}
+                    {course.category}
                   </Text>
                 </View>
-                <ChevronRight size={18} color={colors.icon} />
-              </TouchableOpacity>
+              </View>
             ))}
           </View>
         )}
@@ -206,7 +239,7 @@ export default function ExploreScreen() {
                     {student.is_top_student && <TopStudentBadge size="sm" />}
                   </View>
                   <Text style={[styles.studentSub, { color: colors.textSecondary }]}>
-                    @{student.username} • {student.major}
+                    @{student.username} · {student.major}
                   </Text>
                 </View>
                 <ChevronRight size={18} color={colors.icon} />
@@ -215,7 +248,7 @@ export default function ExploreScreen() {
           </View>
         )}
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 

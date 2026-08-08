@@ -8,23 +8,25 @@ import * as FileSystem from 'expo-file-system/legacy';
  */
 export async function uploadImageToSupabase(
   fileUri: string,
-  bucket: string = 'avatars',
-  folderPath: string = 'user_avatars'
+  bucket: string = 'posts',
+  folderPath: string = 'post_images'
 ): Promise<string> {
+  if (!fileUri) return '';
   // If it's already an HTTP/HTTPS public web URL, return as is
-  if (!fileUri || fileUri.startsWith('http://') || fileUri.startsWith('https://')) {
+  if (fileUri.startsWith('http://') || fileUri.startsWith('https://')) {
     return fileUri;
   }
 
   try {
     // 1. Generate unique file path
     const fileExt = fileUri.split('.').pop()?.toLowerCase() || 'jpg';
-    const filePath = `${folderPath}/${Date.now()}_${Math.random().toString(36).substring(2, 9)}.${fileExt}`;
+    const cleanExt = ['jpg', 'jpeg', 'png', 'webp', 'gif'].includes(fileExt) ? fileExt : 'jpg';
+    const filePath = `${folderPath}/${Date.now()}_${Math.random().toString(36).substring(2, 9)}.${cleanExt}`;
 
     let fileData: ArrayBuffer;
 
-    // 2. Read file content safely across iOS / Android / Web (Expo SDK 54 legacy FileSystem)
-    if (fileUri.startsWith('file://') || fileUri.startsWith('ph://')) {
+    // 2. Read file content safely across iOS / Android / Web (Expo SDK 54 FileSystem)
+    if (fileUri.startsWith('file://') || fileUri.startsWith('ph://') || fileUri.startsWith('content://')) {
       const base64 = await FileSystem.readAsStringAsync(fileUri, {
         encoding: FileSystem.EncodingType.Base64,
       });
@@ -34,16 +36,18 @@ export async function uploadImageToSupabase(
       fileData = await response.arrayBuffer();
     }
 
+    const mimeType = cleanExt === 'png' ? 'image/png' : cleanExt === 'webp' ? 'image/webp' : 'image/jpeg';
+
     // 3. Upload to Supabase Storage bucket
     const { data, error } = await supabase.storage
       .from(bucket)
       .upload(filePath, fileData, {
-        contentType: `image/${fileExt === 'png' ? 'png' : 'jpeg'}`,
+        contentType: mimeType,
         upsert: true,
       });
 
     if (error) {
-      console.error('Supabase storage upload error:', error.message);
+      console.error(`Supabase storage upload error (bucket: ${bucket}):`, error.message);
       return fileUri;
     }
 

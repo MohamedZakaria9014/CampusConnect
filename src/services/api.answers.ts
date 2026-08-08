@@ -66,3 +66,23 @@ export async function markBestAnswer(postId: string, commentId: string) {
   await supabase.from('comments').update({ is_best_answer: true }).eq('id', commentId);
   await supabase.from('posts').update({ is_solved: true }).eq('id', postId);
 }
+
+export async function fetchAnswersForUser(userId: string): Promise<CommentAnswer[]> {
+  if (!userId) return [];
+  const { data, error } = await supabase
+    .from('comments')
+    .select(`
+      *,
+      author:profiles(*, university:universities(*)),
+      post:posts(*, author:profiles(*, university:universities(*)))
+    `)
+    .eq('author_id', userId)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error('Error fetching user answers from Supabase:', error.message);
+    return [];
+  }
+
+  return (data || []) as CommentAnswer[];
+}

@@ -7,8 +7,10 @@
     "icon": "./assets/images/icon.png",
     "scheme": "campusconnect",
     "userInterfaceStyle": "automatic",
+    "backgroundColor": "#0B0F19",
     "newArchEnabled": true,
     "ios": {
+      "backgroundColor": "#0B0F19",
       "supportsTablet": true
     },
     "android": {

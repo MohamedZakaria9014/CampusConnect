@@ -7,7 +7,7 @@ import {
   TouchableOpacity,
   RefreshControl,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import { MessageSquare } from 'lucide-react-native';
@@ -73,8 +73,10 @@ export default function ConversationsListScreen() {
     );
   };
 
+  const insets = useSafeAreaInsets();
+
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
+    <View style={[styles.container, { backgroundColor: colors.background, paddingTop: insets.top }]}>
       <FlatList
         data={conversations}
         keyExtractor={(item) => item.id}
@@ -92,7 +94,7 @@ export default function ConversationsListScreen() {
           </View>
         }
       />
-    </SafeAreaView>
+    </View>
   );
 }
 

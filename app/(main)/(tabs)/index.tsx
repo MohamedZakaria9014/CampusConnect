@@ -8,18 +8,18 @@ import {
   RefreshControl,
   ScrollView,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Bell, Flame, Sparkles, GraduationCap, Plus } from 'lucide-react-native';
 import { useQuery } from '@tanstack/react-query';
-import { useThemeStore } from '../../src/store/useThemeStore';
-import { useAuthStore } from '../../src/store/useAuthStore';
-import { fetchPosts } from '../../src/services/api.posts';
-import { PostCard } from '../../src/components/features/PostCard';
-import { Skeleton } from '../../src/components/ui/Skeleton';
-import { CATEGORIES, CategoryType } from '../../src/constants/categories';
-import { SPACING, RADIUS } from '../../src/constants/theme';
-import { Post } from '../../src/types/models';
+import { useThemeStore } from '../../../src/store/useThemeStore';
+import { useAuthStore } from '../../../src/store/useAuthStore';
+import { fetchPosts } from '../../../src/services/api.posts';
+import { PostCard } from '../../../src/components/features/PostCard';
+import { Skeleton } from '../../../src/components/ui/Skeleton';
+import { CATEGORIES, CategoryType } from '../../../src/constants/categories';
+import { SPACING, RADIUS } from '../../../src/constants/theme';
+import { Post } from '../../../src/types/models';
 
 export default function HomeFeedScreen() {
   const { colors } = useThemeStore();
@@ -138,8 +138,10 @@ export default function HomeFeedScreen() {
     </View>
   );
 
+  const insets = useSafeAreaInsets();
+
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
+    <View style={[styles.container, { backgroundColor: colors.background, paddingTop: insets.top }]}>
       <FlatList
         data={posts}
         keyExtractor={(item) => item.id}
@@ -187,7 +189,7 @@ export default function HomeFeedScreen() {
           )
         }
       />
-    </SafeAreaView>
+    </View>
   );
 }
 

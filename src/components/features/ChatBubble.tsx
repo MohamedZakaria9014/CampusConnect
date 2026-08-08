@@ -1,8 +1,9 @@
-import React from 'react';
-import { View, Text, StyleSheet, Image } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
 import { Message } from '../../types/models';
 import { useThemeStore } from '../../store/useThemeStore';
 import { CodeBlock } from '../ui/CodeBlock';
+import { ImageViewerModal } from '../ui/ImageViewerModal';
 import { timeAgo } from '../../utils/formatters';
 import { SPACING, RADIUS } from '../../constants/theme';
 
@@ -13,6 +14,7 @@ export interface ChatBubbleProps {
 
 export const ChatBubble: React.FC<ChatBubbleProps> = ({ message, isMe }) => {
   const { colors } = useThemeStore();
+  const [isFullImageVisible, setIsFullImageVisible] = useState(false);
 
   return (
     <View
@@ -47,7 +49,9 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({ message, isMe }) => {
         ) : null}
 
         {message.image_url ? (
-          <Image source={{ uri: message.image_url }} style={styles.image} />
+          <TouchableOpacity activeOpacity={0.9} onPress={() => setIsFullImageVisible(true)}>
+            <Image source={{ uri: message.image_url }} style={styles.image} />
+          </TouchableOpacity>
         ) : null}
 
         <Text
@@ -59,6 +63,14 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({ message, isMe }) => {
           {timeAgo(message.created_at)}
         </Text>
       </View>
+
+      {message.image_url ? (
+        <ImageViewerModal
+          visible={isFullImageVisible}
+          imageUrl={message.image_url}
+          onClose={() => setIsFullImageVisible(false)}
+        />
+      ) : null}
     </View>
   );
 };

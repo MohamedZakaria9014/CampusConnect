@@ -1,11 +1,12 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
-import { ArrowBigUp, ArrowBigDown, CheckCircle2, MessageCircle, MessageSquare } from 'lucide-react-native';
+import { ArrowBigUp, ArrowBigDown, CheckCircle2, MessageCircle, MessageSquare, HelpCircle } from 'lucide-react-native';
 import { CommentAnswer } from '../../types/models';
 import { useThemeStore } from '../../store/useThemeStore';
 import { Avatar } from '../ui/Avatar';
 import { TopStudentBadge } from '../ui/TopStudentBadge';
 import { CodeBlock } from '../ui/CodeBlock';
+import { ImageViewerModal } from '../ui/ImageViewerModal';
 import { timeAgo, formatGPA } from '../../utils/formatters';
 import { SPACING, RADIUS } from '../../constants/theme';
 import { voteAnswer, markBestAnswer } from '../../services/api.answers';
@@ -26,6 +27,7 @@ export const AnswerCard: React.FC<AnswerCardProps> = ({ answer, postAuthorId, on
   const [voteState, setVoteState] = React.useState<number>(answer.user_vote || 0);
   const [upvotesCount, setUpvotesCount] = React.useState<number>(answer.upvotes_count || 0);
   const [isBest, setIsBest] = React.useState<boolean>(answer.is_best_answer || false);
+  const [fullImageUrl, setFullImageUrl] = React.useState<string | null>(null);
 
   const author = answer.author;
   const isPostAuthor = user?.id === postAuthorId;
@@ -64,6 +66,20 @@ export const AnswerCard: React.FC<AnswerCardProps> = ({ answer, postAuthorId, on
         },
       ]}
     >
+      {/* Parent Question Context Header if rendered in Profile Answers */}
+      {answer.post && (
+        <TouchableOpacity
+          activeOpacity={0.85}
+          onPress={() => router.push(`/(main)/post/${answer.post_id}` as any)}
+          style={[styles.questionHeaderBar, { backgroundColor: colors.surfaceSecondary, borderColor: colors.border }]}
+        >
+          <HelpCircle size={14} color={colors.primary} />
+          <Text style={[styles.questionHeaderText, { color: colors.textSecondary }]} numberOfLines={1}>
+            Question: <Text style={{ color: colors.text, fontWeight: '700' }}>{answer.post.title}</Text>
+          </Text>
+        </TouchableOpacity>
+      )}
+
       {/* Best Answer Banner */}
       {isBest && (
         <View style={[styles.bestBanner, { backgroundColor: colors.accent + '20' }]}>
@@ -98,8 +114,16 @@ export const AnswerCard: React.FC<AnswerCardProps> = ({ answer, postAuthorId, on
 
       {/* Image attachments if present */}
       {answer.image_urls && answer.image_urls.length > 0 ? (
-        <Image source={{ uri: answer.image_urls[0] }} style={styles.answerImage} />
+        <TouchableOpacity activeOpacity={0.9} onPress={() => setFullImageUrl(answer.image_urls![0])}>
+          <Image source={{ uri: answer.image_urls[0] }} style={styles.answerImage} />
+        </TouchableOpacity>
       ) : null}
+
+      <ImageViewerModal
+        visible={!!fullImageUrl}
+        imageUrl={fullImageUrl}
+        onClose={() => setFullImageUrl(null)}
+      />
 
       {/* Footer Controls */}
       <View style={[styles.footer, { borderColor: colors.border }]}>
@@ -238,5 +262,19 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 12,
     fontWeight: '700',
+  },
+  questionHeaderBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: SPACING.md,
+    paddingVertical: 8,
+    borderRadius: RADIUS.md,
+    borderWidth: 1,
+    marginBottom: SPACING.xs,
+    gap: 6,
+  },
+  questionHeaderText: {
+    fontSize: 12,
+    flex: 1,
   },
 });

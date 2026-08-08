@@ -1,5 +1,5 @@
 import { supabase } from '../lib/supabase';
-import { University, Course, Profile } from '../types/models';
+import { University, Profile } from '../types/models';
 
 export interface Major {
   id: string;
@@ -23,19 +23,6 @@ export async function fetchMajors(): Promise<Major[]> {
     return [];
   }
   return (data || []) as Major[];
-}
-
-export async function fetchCourses(universityId?: string): Promise<Course[]> {
-  let query = supabase.from('courses').select('*, university:universities(*)');
-  if (universityId) {
-    query = query.eq('university_id', universityId);
-  }
-  const { data, error } = await query;
-  if (error) {
-    console.error('Error fetching courses from Supabase:', error.message);
-    return [];
-  }
-  return (data || []) as Course[];
 }
 
 export async function searchStudents(queryStr: string): Promise<Profile[]> {

@@ -48,8 +48,8 @@ export interface Post {
   id: string;
   author_id: string;
   university_id?: string;
-  course_id?: string;
-  category: 'Mathematics' | 'Programming' | 'Physics' | 'Chemistry' | 'Engineering' | 'Business' | 'Other';
+  course_code?: string;
+  category: string;
   title: string;
   content: string;
   code_snippet?: string;
@@ -64,7 +64,6 @@ export interface Post {
   updated_at: string;
   author?: Profile;
   university?: University;
-  course?: Course;
   is_upvoted?: boolean;
   is_saved?: boolean;
 }
@@ -83,6 +82,7 @@ export interface CommentAnswer {
   created_at: string;
   updated_at: string;
   author?: Profile;
+  post?: Post;
   user_vote?: number; // 1, -1, or 0
   replies?: CommentAnswer[];
 }

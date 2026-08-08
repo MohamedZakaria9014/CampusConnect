@@ -1,6 +1,6 @@
 import React from 'react';
-import { View, Text, StyleSheet, Image, TouchableOpacity, Share } from 'react-native';
-import { ThumbsUp, MessageSquare, Bookmark, Share2, Eye, CheckCircle2 } from 'lucide-react-native';
+import { View, Text, StyleSheet, Image, TouchableOpacity, Share, Alert } from 'react-native';
+import { ThumbsUp, MessageSquare, Bookmark, Share2, Eye, CheckCircle2, Trash2 } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { Post } from '../../types/models';
 import { useThemeStore } from '../../store/useThemeStore';
@@ -8,17 +8,19 @@ import { Avatar } from '../ui/Avatar';
 import { TopStudentBadge } from '../ui/TopStudentBadge';
 import { CodeBlock } from '../ui/CodeBlock';
 import { Card } from '../ui/Card';
+import { ImageViewerModal } from '../ui/ImageViewerModal';
 import { timeAgo, formatCount } from '../../utils/formatters';
 import { SPACING, RADIUS } from '../../constants/theme';
-import { togglePostLike, toggleSavePost } from '../../services/api.posts';
+import { togglePostLike, toggleSavePost, deletePost } from '../../services/api.posts';
 import { useAuthStore } from '../../store/useAuthStore';
 
 export interface PostCardProps {
   post: Post;
   onPress?: () => void;
+  onDelete?: (postId: string) => void;
 }
 
-export const PostCard: React.FC<PostCardProps> = ({ post, onPress }) => {
+export const PostCard: React.FC<PostCardProps> = ({ post, onPress, onDelete }) => {
   const { colors } = useThemeStore();
   const router = useRouter();
   const user = useAuthStore((s) => s.user);
@@ -26,9 +28,34 @@ export const PostCard: React.FC<PostCardProps> = ({ post, onPress }) => {
   const [isLiked, setIsLiked] = React.useState(post.is_upvoted || false);
   const [likeCount, setLikeCount] = React.useState(post.upvotes_count || 0);
   const [isSaved, setIsSaved] = React.useState(post.is_saved || false);
+  const [fullImageUrl, setFullImageUrl] = React.useState<string | null>(null);
 
   const author = post.author;
   const university = post.university || author?.university;
+  const isMyPost = user?.id === post.author_id;
+
+  const handleDelete = (e: any) => {
+    e.stopPropagation();
+    Alert.alert(
+      'Delete Question',
+      'Are you sure you want to delete this question? This action cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await deletePost(post.id);
+              if (onDelete) onDelete(post.id);
+            } catch (err) {
+              Alert.alert('Error', 'Could not delete question. Please try again.');
+            }
+          },
+        },
+      ]
+    );
+  };
 
   const handleLike = async (e: any) => {
     e.stopPropagation();
@@ -89,14 +116,23 @@ export const PostCard: React.FC<PostCardProps> = ({ post, onPress }) => {
             </View>
           </TouchableOpacity>
 
-          <Text style={[styles.timeAgo, { color: colors.textMuted }]}>{timeAgo(post.created_at)}</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <Text style={[styles.timeAgo, { color: colors.textMuted }]}>{timeAgo(post.created_at)}</Text>
+            {isMyPost && (
+              <TouchableOpacity onPress={handleDelete} style={{ padding: 4 }}>
+                <Trash2 size={16} color={colors.error} />
+              </TouchableOpacity>
+            )}
+          </View>
         </View>
 
         {/* Course Pill & Subject Category */}
         <View style={styles.pillRow}>
-          {post.course && (
+          {post.course_code && (
             <View style={[styles.coursePill, { backgroundColor: colors.primaryLight + '20' }]}>
-              <Text style={[styles.coursePillText, { color: colors.primary }]}>{post.course.code}</Text>
+              <Text style={[styles.coursePillText, { color: colors.primary }]}>
+                {post.course_code}
+              </Text>
             </View>
           )}
           <View style={[styles.categoryPill, { backgroundColor: colors.surfaceSecondary }]}>
@@ -123,8 +159,22 @@ export const PostCard: React.FC<PostCardProps> = ({ post, onPress }) => {
 
         {/* Image Attachment if present */}
         {post.image_urls && post.image_urls.length > 0 ? (
-          <Image source={{ uri: post.image_urls[0] }} style={styles.postImage} />
+          <TouchableOpacity
+            activeOpacity={0.9}
+            onPress={(e) => {
+              e.stopPropagation();
+              setFullImageUrl(post.image_urls![0]);
+            }}
+          >
+            <Image source={{ uri: post.image_urls[0] }} style={styles.postImage} />
+          </TouchableOpacity>
         ) : null}
+
+        <ImageViewerModal
+          visible={!!fullImageUrl}
+          imageUrl={fullImageUrl}
+          onClose={() => setFullImageUrl(null)}
+        />
 
         {/* Footer Actions: Upvote, Answers, Save, Share */}
         <View style={[styles.footer, { borderColor: colors.border }]}>

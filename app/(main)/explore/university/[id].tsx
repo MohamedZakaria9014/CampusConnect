@@ -1,11 +1,11 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { ArrowLeft, GraduationCap, Users, BookOpen, MessageSquare } from 'lucide-react-native';
 import { useQuery } from '@tanstack/react-query';
 import { useThemeStore } from '../../../../src/store/useThemeStore';
-import { fetchUniversities, fetchCourses, fetchTopStudents } from '../../../../src/services/api.explore';
+import { fetchUniversities, fetchTopStudents } from '../../../../src/services/api.explore';
 import { fetchPosts } from '../../../../src/services/api.posts';
 import { PostCard } from '../../../../src/components/features/PostCard';
 import { Avatar } from '../../../../src/components/ui/Avatar';
@@ -29,18 +29,15 @@ export default function UniversityScreen() {
     queryFn: () => fetchTopStudents(id),
   });
 
-  const { data: courses } = useQuery({
-    queryKey: ['courses', id],
-    queryFn: () => fetchCourses(id),
-  });
-
   const { data: posts } = useQuery({
     queryKey: ['uniPosts', id],
     queryFn: () => fetchPosts({ universityId: id }),
   });
 
+  const insets = useSafeAreaInsets();
+
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+    <View style={[styles.container, { backgroundColor: colors.background, paddingTop: insets.top }]}>
       <View style={[styles.topHeader, { borderColor: colors.border }]}>
         <TouchableOpacity
           onPress={() => router.canGoBack() ? router.back() : router.replace('/(main)/explore' as any)}
@@ -85,25 +82,6 @@ export default function UniversityScreen() {
           </ScrollView>
         </View>
 
-        {/* Popular Courses */}
-        <View style={styles.sectionMargin}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>University Courses</Text>
-          {courses?.map((course) => (
-            <TouchableOpacity
-              key={course.id}
-              style={[styles.courseRow, { backgroundColor: colors.surface, borderColor: colors.border }]}
-            >
-              <BookOpen size={20} color={colors.primary} />
-              <View style={styles.courseMeta}>
-                <Text style={[styles.courseCodeText, { color: colors.text }]}>
-                  {course.code} - {course.name}
-                </Text>
-                <Text style={[styles.courseDeptText, { color: colors.textSecondary }]}>{course.department}</Text>
-              </View>
-            </TouchableOpacity>
-          ))}
-        </View>
-
         {/* Recent Community Questions */}
         <View style={styles.sectionMargin}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>Community Questions</Text>
@@ -116,7 +94,7 @@ export default function UniversityScreen() {
           ))}
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 

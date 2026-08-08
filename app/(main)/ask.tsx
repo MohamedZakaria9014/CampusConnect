@@ -12,20 +12,21 @@ import {
   Alert,
   Modal,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { Camera, Image as ImageIcon, Code, Eye, X, Send, Sparkles } from 'lucide-react-native';
 import { useThemeStore } from '../../src/store/useThemeStore';
 import { useAuthStore } from '../../src/store/useAuthStore';
 import { CATEGORIES } from '../../src/constants/categories';
-import { Post, Course } from '../../src/types/models';
-import { fetchCourses } from '../../src/services/api.explore';
+import { Post } from '../../src/types/models';
 import { createPost } from '../../src/services/api.posts';
 import { compressImage } from '../../src/utils/imageCompressor';
 import { SPACING, RADIUS } from '../../src/constants/theme';
 import { Button } from '../../src/components/ui/Button';
 import { CodeBlock } from '../../src/components/ui/CodeBlock';
+import { LanguagePicker } from '../../src/components/ui/LanguagePicker';
+import { uploadImageToSupabase } from '../../src/services/storage';
 
 export default function AskScreen() {
   const { colors } = useThemeStore();
@@ -34,9 +35,9 @@ export default function AskScreen() {
 
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<Post['category']>('Programming');
-  const [selectedCourseId, setSelectedCourseId] = useState<string | undefined>(undefined);
-  const [courses, setCourses] = useState<Course[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<string>('Programming');
+  const [customCategory, setCustomCategory] = useState('');
+  const [courseCodeInput, setCourseCodeInput] = useState('');
   const [codeSnippet, setCodeSnippet] = useState('');
   const [codeLanguage, setCodeLanguage] = useState('cpp');
   const [showCodeInput, setShowCodeInput] = useState(false);
@@ -45,10 +46,6 @@ export default function AskScreen() {
   const [tags, setTags] = useState<string[]>(['Homework', 'CS101']);
   const [isPreviewVisible, setIsPreviewVisible] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
-
-  useEffect(() => {
-    fetchCourses(user?.university_id).then(setCourses);
-  }, [user]);
 
   const handlePickImage = async (useCamera = false) => {
     try {
@@ -61,7 +58,7 @@ export default function AskScreen() {
         }
         result = await ImagePicker.launchCameraAsync({
           quality: 0.8,
-          allowsEditing: true,
+          allowsEditing: false,
         });
       } else {
         const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -71,7 +68,7 @@ export default function AskScreen() {
         }
         result = await ImagePicker.launchImageLibraryAsync({
           quality: 0.8,
-          allowsEditing: true,
+          allowsEditing: false,
         });
       }
 
@@ -107,16 +104,23 @@ export default function AskScreen() {
 
     setIsPublishing(true);
     try {
+      // Upload attached images to Supabase storage bucket
+      const uploadedImageUrls = await Promise.all(
+        imageUris.map((uri) => uploadImageToSupabase(uri, 'posts', 'post_images'))
+      );
+
+      const finalCategory = selectedCategory === 'Other' ? (customCategory.trim() || 'Other') : selectedCategory;
+
       await createPost({
         author_id: user?.id || 'u1111111-1111-1111-1111-111111111111',
         university_id: user?.university_id,
-        course_id: selectedCourseId,
-        category: selectedCategory,
+        course_code: courseCodeInput.trim() || undefined,
+        category: finalCategory,
         title,
         content,
         code_snippet: codeSnippet || undefined,
         code_language: codeLanguage,
-        image_urls: imageUris,
+        image_urls: uploadedImageUrls,
         tags,
         author: user || undefined,
       });
@@ -131,8 +135,10 @@ export default function AskScreen() {
     }
   };
 
+  const insets = useSafeAreaInsets();
+
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+    <View style={[styles.container, { backgroundColor: colors.background, paddingTop: insets.top }]}>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={{ flex: 1 }}
@@ -175,6 +181,17 @@ export default function AskScreen() {
               );
             })}
           </ScrollView>
+
+          {/* Custom Subject Area Text Box if "Other" is selected */}
+          {selectedCategory === 'Other' && (
+            <TextInput
+              placeholder="Enter your custom subject area (e.g. Neuroscience, Ethics)..."
+              placeholderTextColor={colors.textMuted}
+              value={customCategory}
+              onChangeText={setCustomCategory}
+              style={[styles.customCatInput, { color: colors.text, backgroundColor: colors.surfaceSecondary, borderColor: colors.border }]}
+            />
+          )}
 
           {/* Prompt Placeholder Title */}
           <TextInput
@@ -249,12 +266,10 @@ export default function AskScreen() {
             <View style={[styles.codeSection, { backgroundColor: colors.surface, borderColor: colors.border }]}>
               <View style={styles.codeHeader}>
                 <Text style={[styles.codeTitle, { color: colors.text }]}>Code Snippet</Text>
-                <TextInput
-                  placeholder="Language (cpp, python, js)"
-                  placeholderTextColor={colors.textMuted}
-                  value={codeLanguage}
-                  onChangeText={setCodeLanguage}
-                  style={[styles.langInput, { color: colors.primary }]}
+                <LanguagePicker
+                  selectedLanguage={codeLanguage}
+                  onSelectLanguage={setCodeLanguage}
+                  compact
                 />
               </View>
               <TextInput
@@ -268,33 +283,17 @@ export default function AskScreen() {
             </View>
           )}
 
-          {/* Course Selector */}
-          {courses.length > 0 && (
-            <View style={styles.sectionMargin}>
-              <Text style={[styles.sectionLabel, { color: colors.text }]}>Link Course (Optional)</Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                {courses.map((course) => {
-                  const isSelected = selectedCourseId === course.id;
-                  return (
-                    <TouchableOpacity
-                      key={course.id}
-                      onPress={() => setSelectedCourseId(isSelected ? undefined : course.id)}
-                      style={[
-                        styles.courseChip,
-                        {
-                          backgroundColor: isSelected ? colors.primary : colors.surfaceSecondary,
-                        },
-                      ]}
-                    >
-                      <Text style={[styles.courseChipText, { color: isSelected ? '#FFFFFF' : colors.text }]}>
-                        {course.code} - {course.name}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </ScrollView>
-            </View>
-          )}
+          {/* Writeable Course Code Field */}
+          <View style={styles.sectionMargin}>
+            <Text style={[styles.sectionLabel, { color: colors.text }]}>Link Course (Optional)</Text>
+            <TextInput
+              placeholder="Enter course code or name (e.g. CS101, MATH201, Anatomy 1)..."
+              placeholderTextColor={colors.textMuted}
+              value={courseCodeInput}
+              onChangeText={setCourseCodeInput}
+              style={[styles.courseInput, { color: colors.text, backgroundColor: colors.surfaceSecondary, borderColor: colors.border }]}
+            />
+          </View>
 
           {/* Tags */}
           <View style={styles.sectionMargin}>
@@ -336,34 +335,39 @@ export default function AskScreen() {
         </ScrollView>
 
         {/* Question Live Preview Modal */}
-        <Modal visible={isPreviewVisible} animationType="slide" transparent>
-          <View style={[styles.modalOverlay, { backgroundColor: colors.overlay }]}>
-            <View style={[styles.modalContent, { backgroundColor: colors.background }]}>
-              <View style={styles.modalHeader}>
-                <Text style={[styles.modalTitle, { color: colors.text }]}>Question Live Preview</Text>
-                <TouchableOpacity onPress={() => setIsPreviewVisible(false)}>
-                  <X size={24} color={colors.text} />
-                </TouchableOpacity>
+        <Modal visible={isPreviewVisible} animationType="slide" onRequestClose={() => setIsPreviewVisible(false)}>
+          <View style={[styles.fullScreenModal, { backgroundColor: colors.background, paddingTop: insets.top }]}>
+            <View style={[styles.modalHeader, { borderColor: colors.border }]}>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>Question Live Preview</Text>
+              <TouchableOpacity onPress={() => setIsPreviewVisible(false)} style={styles.closeBtn}>
+                <X size={24} color={colors.text} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView contentContainerStyle={styles.previewScrollContent} showsVerticalScrollIndicator={true}>
+              <View style={[styles.categoryPill, { backgroundColor: colors.primaryLight + '20' }]}>
+                <Text style={[styles.previewCategory, { color: colors.primary }]}>{selectedCategory.toUpperCase()}</Text>
               </View>
 
-              <ScrollView style={{ padding: SPACING.lg }}>
-                <Text style={[styles.previewCategory, { color: colors.primary }]}>{selectedCategory.toUpperCase()}</Text>
-                <Text style={[styles.previewQuestionTitle, { color: colors.text }]}>{title || 'Your Question Title'}</Text>
-                <Text style={[styles.previewContentText, { color: colors.textSecondary }]}>
-                  {content || 'Your detailed question explanation will appear here.'}
-                </Text>
+              <Text style={[styles.previewQuestionTitle, { color: colors.text }]}>{title || 'Your Question Title'}</Text>
+              <Text style={[styles.previewContentText, { color: colors.textSecondary }]}>
+                {content || 'Your detailed question explanation will appear here.'}
+              </Text>
 
-                {codeSnippet ? <CodeBlock code={codeSnippet} language={codeLanguage} /> : null}
+              {codeSnippet ? (
+                <View style={{ marginVertical: 12 }}>
+                  <CodeBlock code={codeSnippet} language={codeLanguage} />
+                </View>
+              ) : null}
 
-                {imageUris.length > 0 && (
-                  <Image source={{ uri: imageUris[0] }} style={{ width: '100%', height: 200, borderRadius: 12, marginVertical: 12 }} />
-                )}
-              </ScrollView>
-            </View>
+              {imageUris.length > 0 && (
+                <Image source={{ uri: imageUris[0] }} style={{ width: '100%', height: 220, borderRadius: 12, marginVertical: 12 }} />
+              )}
+            </ScrollView>
           </View>
         </Modal>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -416,6 +420,21 @@ const styles = StyleSheet.create({
   catChipText: {
     fontSize: 13,
     fontWeight: '600',
+  },
+  customCatInput: {
+    fontSize: 14,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: 10,
+    borderRadius: RADIUS.md,
+    borderWidth: 1,
+    marginBottom: SPACING.md,
+  },
+  courseInput: {
+    fontSize: 14,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: 10,
+    borderRadius: RADIUS.md,
+    borderWidth: 1,
   },
   titleInput: {
     fontSize: 20,
@@ -558,32 +577,36 @@ const styles = StyleSheet.create({
     marginTop: SPACING.md,
     marginBottom: SPACING.xxl,
   },
-  modalOverlay: {
+  fullScreenModal: {
     flex: 1,
-    justifyContent: 'flex-end',
   },
-  modalContent: {
-    borderTopLeftRadius: RADIUS.xl,
-    borderTopRightRadius: RADIUS.xl,
-    maxHeight: '80%',
+  previewScrollContent: {
+    padding: SPACING.lg,
+    paddingBottom: 60,
   },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: SPACING.lg,
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.md,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.1)',
   },
   modalTitle: {
     fontSize: 18,
     fontWeight: '800',
   },
+  categoryPill: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: RADIUS.sm,
+    marginBottom: SPACING.xs,
+  },
   previewCategory: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '800',
     letterSpacing: 1,
-    marginBottom: 4,
   },
   previewQuestionTitle: {
     fontSize: 20,
