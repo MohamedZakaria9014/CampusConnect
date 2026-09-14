@@ -1,6 +1,7 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
-import { ArrowBigUp, ArrowBigDown, CheckCircle2, MessageCircle, MessageSquare, HelpCircle } from 'lucide-react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
+import { Image } from 'expo-image';
+import { ArrowBigUp, ArrowBigDown, CheckCircle2, MessageCircle, HelpCircle } from 'lucide-react-native';
 import { CommentAnswer } from '../../types/models';
 import { useThemeStore } from '../../store/useThemeStore';
 import { Avatar } from '../ui/Avatar';
@@ -19,34 +20,56 @@ export interface AnswerCardProps {
   onRefresh?: () => void;
 }
 
-export const AnswerCard: React.FC<AnswerCardProps> = ({ answer, postAuthorId, onRefresh }) => {
+const AnswerCardComponent: React.FC<AnswerCardProps> = ({ answer, postAuthorId, onRefresh }) => {
   const { colors } = useThemeStore();
   const user = useAuthStore((s) => s.user);
   const router = useRouter();
 
-  const [voteState, setVoteState] = React.useState<number>(answer.user_vote || 0);
-  const [upvotesCount, setUpvotesCount] = React.useState<number>(answer.upvotes_count || 0);
-  const [isBest, setIsBest] = React.useState<boolean>(answer.is_best_answer || false);
+  const [optimisticVote, setOptimisticVote] = React.useState<{ vote: number; delta: number } | null>(null);
+  const [optimisticBest, setOptimisticBest] = React.useState<boolean | null>(null);
   const [fullImageUrl, setFullImageUrl] = React.useState<string | null>(null);
+
+  const voteState = optimisticVote !== null ? optimisticVote.vote : (answer.user_vote || 0);
+  const upvotesCount = Math.max(0, (answer.upvotes_count || 0) + (optimisticVote !== null ? optimisticVote.delta : 0));
+  const isBest = optimisticBest !== null ? optimisticBest : (answer.is_best_answer || false);
 
   const author = answer.author;
   const isPostAuthor = user?.id === postAuthorId;
 
   const handleVote = async (targetVote: 1 | -1) => {
-    if (!user) return;
-    const nextVote = voteState === targetVote ? 0 : targetVote;
-    const delta = nextVote - voteState;
+    if (!user) {
+      Alert.alert('Sign In Required', 'Please sign in to vote on answers.', [
+        { text: 'Sign In', onPress: () => router.push('/(auth)/login') },
+        { text: 'Cancel', style: 'cancel' },
+      ]);
+      return;
+    }
 
-    setVoteState(nextVote);
-    setUpvotesCount((prev) => prev + delta);
+    const prevVote = voteState;
+    const nextVote = prevVote === targetVote ? 0 : targetVote;
+    const initialVote = answer.user_vote || 0;
+    const delta = nextVote - initialVote;
 
-    await voteAnswer(answer.id, user.id, nextVote as any);
+    setOptimisticVote({ vote: nextVote, delta });
+
+    try {
+      await voteAnswer(answer.id, user.id, nextVote as any);
+    } catch {
+      setOptimisticVote(null);
+      Alert.alert('Error', 'Failed to update vote. Please try again.');
+    }
   };
 
   const handleMarkBest = async () => {
-    setIsBest(true);
-    await markBestAnswer(answer.post_id, answer.id);
-    if (onRefresh) onRefresh();
+    if (!user) return;
+    setOptimisticBest(true);
+    try {
+      await markBestAnswer(answer.post_id, answer.id);
+      if (onRefresh) onRefresh();
+    } catch {
+      setOptimisticBest(null);
+      Alert.alert('Error', 'Failed to select best answer. Please try again.');
+    }
   };
 
   const handleStartChat = () => {
@@ -115,7 +138,13 @@ export const AnswerCard: React.FC<AnswerCardProps> = ({ answer, postAuthorId, on
       {/* Image attachments if present */}
       {answer.image_urls && answer.image_urls.length > 0 ? (
         <TouchableOpacity activeOpacity={0.9} onPress={() => setFullImageUrl(answer.image_urls![0])}>
-          <Image source={{ uri: answer.image_urls[0] }} style={styles.answerImage} />
+          <Image
+            source={{ uri: answer.image_urls[0] }}
+            contentFit="cover"
+            transition={200}
+            cachePolicy="memory-disk"
+            style={styles.answerImage}
+          />
         </TouchableOpacity>
       ) : null}
 
@@ -278,3 +307,5 @@ const styles = StyleSheet.create({
     flex: 1,
   },
 });
+
+export const AnswerCard = React.memo(AnswerCardComponent);

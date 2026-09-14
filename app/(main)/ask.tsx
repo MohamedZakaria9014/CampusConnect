@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -15,11 +15,10 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
-import { Camera, Image as ImageIcon, Code, Eye, X, Send, Sparkles } from 'lucide-react-native';
+import { Camera, Image as ImageIcon, Code, Eye, X, Send } from 'lucide-react-native';
 import { useThemeStore } from '../../src/store/useThemeStore';
 import { useAuthStore } from '../../src/store/useAuthStore';
 import { CATEGORIES } from '../../src/constants/categories';
-import { Post } from '../../src/types/models';
 import { createPost } from '../../src/services/api.posts';
 import { compressImage } from '../../src/utils/imageCompressor';
 import { SPACING, RADIUS } from '../../src/constants/theme';
@@ -76,7 +75,7 @@ export default function AskScreen() {
         const compressed = await compressImage(result.assets[0].uri);
         setImageUris((prev) => [...prev, compressed.uri]);
       }
-    } catch (e) {
+    } catch {
       Alert.alert('Upload Warning', 'Could not select image.');
     }
   };
@@ -102,6 +101,14 @@ export default function AskScreen() {
       return;
     }
 
+    if (!user?.id) {
+      Alert.alert('Sign In Required', 'Please sign in or complete your profile to post questions.', [
+        { text: 'Sign In', onPress: () => router.push('/(auth)/login') },
+        { text: 'Cancel', style: 'cancel' },
+      ]);
+      return;
+    }
+
     setIsPublishing(true);
     try {
       // Upload attached images to Supabase storage bucket
@@ -112,8 +119,8 @@ export default function AskScreen() {
       const finalCategory = selectedCategory === 'Other' ? (customCategory.trim() || 'Other') : selectedCategory;
 
       await createPost({
-        author_id: user?.id || 'u1111111-1111-1111-1111-111111111111',
-        university_id: user?.university_id,
+        author_id: user.id,
+        university_id: user.university_id,
         course_code: courseCodeInput.trim() || undefined,
         category: finalCategory,
         title,
@@ -122,14 +129,14 @@ export default function AskScreen() {
         code_language: codeLanguage,
         image_urls: uploadedImageUrls,
         tags,
-        author: user || undefined,
+        author: user,
       });
 
       setIsPublishing(false);
       Alert.alert('Success 🎉', 'Your academic question has been published to the community!', [
-        { text: 'OK', onPress: () => router.replace('/(main)') },
+        { text: 'OK', onPress: () => router.replace('/(main)/(tabs)') },
       ]);
-    } catch (err) {
+    } catch {
       setIsPublishing(false);
       Alert.alert('Error', 'Failed to publish question. Please try again.');
     }

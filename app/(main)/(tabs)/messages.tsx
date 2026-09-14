@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import {
   View,
   Text,
@@ -6,72 +6,162 @@ import {
   FlatList,
   TouchableOpacity,
   RefreshControl,
+  Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
-import { useQuery } from '@tanstack/react-query';
-import { MessageSquare } from 'lucide-react-native';
+import { useRouter, useFocusEffect } from 'expo-router';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { MessageSquare, Trash2 } from 'lucide-react-native';
 import { useThemeStore } from '../../../src/store/useThemeStore';
 import { useAuthStore } from '../../../src/store/useAuthStore';
-import { fetchConversations } from '../../../src/services/api.chat';
+import { useChatStore } from '../../../src/store/useChatStore';
+import { fetchConversations, getUnreadMessagesCount, deleteConversation } from '../../../src/services/api.chat';
 import { Avatar } from '../../../src/components/ui/Avatar';
 import { timeAgo } from '../../../src/utils/formatters';
 import { SPACING, RADIUS } from '../../../src/constants/theme';
+import { queryKeys } from '../../../src/constants/queryKeys';
 import { Conversation } from '../../../src/types/models';
 
 export default function ConversationsListScreen() {
-  const { colors } = useThemeStore();
+  const colors = useThemeStore((s) => s.colors);
   const router = useRouter();
   const user = useAuthStore((s) => s.user);
+  const queryClient = useQueryClient();
 
   const { data: conversations, isLoading, refetch } = useQuery({
-    queryKey: ['conversations', user?.id],
-    queryFn: () => fetchConversations(user?.id || 'u1111111-1111-1111-1111-111111111111'),
+    queryKey: queryKeys.chat.conversations(user?.id),
+    queryFn: () => (user?.id ? fetchConversations(user.id) : Promise.resolve([])),
+    enabled: !!user?.id,
   });
 
-  const renderHeader = () => (
-    <View style={styles.header}>
-      <Text style={[styles.title, { color: colors.text }]}>Messages</Text>
-      <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-        Direct real-time peer discussion & solutions
-      </Text>
-    </View>
+  useFocusEffect(
+    useCallback(() => {
+      if (user?.id) {
+        queryClient.invalidateQueries({ queryKey: queryKeys.chat.conversations(user.id) });
+        refetch();
+        getUnreadMessagesCount(user.id);
+      }
+    }, [user?.id, refetch, queryClient])
   );
 
-  const renderConversationItem = ({ item }: { item: Conversation }) => {
-    const otherMember = item.members?.find((m) => m.id !== user?.id) || item.members?.[0];
+  const handleDeleteConversation = useCallback(
+    (item: Conversation) => {
+      const otherMember = item.members?.find((m) => m.id !== user?.id) || item.members?.[0];
+      const name = otherMember?.full_name || 'this student';
 
-    return (
-      <TouchableOpacity
-        activeOpacity={0.8}
-        onPress={() => router.push(`/(main)/messages/${otherMember?.id || 'u2222222-2222-2222-2222-222222222222'}` as any)}
-        style={[styles.convCard, { backgroundColor: colors.card, borderColor: colors.border }]}
-      >
-        <Avatar url={otherMember?.avatar_url} name={otherMember?.full_name || 'Student'} size={52} isOnline />
+      Alert.alert(
+        'Delete Conversation',
+        `Are you sure you want to delete your conversation with ${name}? All messages will be permanently deleted.`,
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Delete',
+            style: 'destructive',
+            onPress: async () => {
+              if (!user?.id) return;
+              try {
+                // Optimistically remove from list
+                queryClient.setQueryData(
+                  queryKeys.chat.conversations(user.id),
+                  (prev: Conversation[] | undefined) => (prev || []).filter((c) => c.id !== item.id)
+                );
+                if (item.unread_count && item.unread_count > 0) {
+                  const currentUnread = useChatStore.getState().unreadCount;
+                  useChatStore.getState().setUnreadCount(Math.max(0, currentUnread - item.unread_count));
+                }
+                await deleteConversation(item.id, user.id);
+                queryClient.invalidateQueries({ queryKey: queryKeys.chat.conversations(user.id) });
+                getUnreadMessagesCount(user.id).catch(() => {});
+              } catch (err: any) {
+                Alert.alert('Error', err.message || 'Failed to delete conversation');
+                refetch();
+              }
+            },
+          },
+        ]
+      );
+    },
+    [user?.id, queryClient, refetch]
+  );
 
-        <View style={styles.convMeta}>
-          <View style={styles.topMetaRow}>
-            <Text style={[styles.memberName, { color: colors.text }]}>
-              {otherMember?.full_name || 'Student Peer'}
-            </Text>
-            <Text style={[styles.timeText, { color: colors.textMuted }]}>
-              {timeAgo(item.last_message?.created_at || item.updated_at)}
+  const renderHeader = useCallback(
+    () => (
+      <View style={styles.header}>
+        <Text style={[styles.title, { color: colors.text }]}>Messages</Text>
+        <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
+          Direct real-time peer discussion & solutions
+        </Text>
+      </View>
+    ),
+    [colors]
+  );
+
+  const renderConversationItem = useCallback(
+    ({ item }: { item: Conversation }) => {
+      const otherMember = item.members?.find((m) => m.id !== user?.id) || item.members?.[0];
+      if (!otherMember?.id) return null;
+
+      return (
+        <TouchableOpacity
+          activeOpacity={0.8}
+          onLongPress={() => handleDeleteConversation(item)}
+          onPress={() => {
+            if (item.unread_count && item.unread_count > 0) {
+              const currentUnread = useChatStore.getState().unreadCount;
+              useChatStore.getState().setUnreadCount(Math.max(0, currentUnread - item.unread_count));
+              item.unread_count = 0;
+            }
+            queryClient.setQueryData(
+              queryKeys.chat.conversations(user?.id),
+              (prev: Conversation[] | undefined) => {
+                if (!prev) return [];
+                return prev.map((c) => (c.id === item.id ? { ...c, unread_count: 0 } : c));
+              }
+            );
+            router.push(`/(main)/messages/${otherMember.id}` as any);
+          }}
+          style={[styles.convCard, { backgroundColor: colors.card, borderColor: colors.border }]}
+        >
+          <Avatar url={otherMember?.avatar_url} name={otherMember?.full_name || 'Student'} size={52} isOnline />
+
+          <View style={styles.convMeta}>
+            <View style={styles.topMetaRow}>
+              <Text style={[styles.memberName, { color: colors.text }]}>
+                {otherMember?.full_name || 'Student Peer'}
+              </Text>
+              <Text style={[styles.timeText, { color: colors.textMuted }]}>
+                {timeAgo(item.last_message?.created_at || item.updated_at)}
+              </Text>
+            </View>
+
+            <Text style={[styles.lastMsgText, { color: colors.textSecondary }]} numberOfLines={1}>
+              {item.last_message?.content || 'Started academic discussion...'}
             </Text>
           </View>
 
-          <Text style={[styles.lastMsgText, { color: colors.textSecondary }]} numberOfLines={1}>
-            {item.last_message?.content || 'Started academic discussion...'}
-          </Text>
-        </View>
+          <View style={styles.rightActionRow}>
+            {item.unread_count && item.unread_count > 0 ? (
+              <View style={[styles.unreadBadge, { backgroundColor: colors.primary }]}>
+                <Text style={styles.unreadText}>{item.unread_count}</Text>
+              </View>
+            ) : null}
 
-        {item.unread_count && item.unread_count > 0 ? (
-          <View style={[styles.unreadBadge, { backgroundColor: colors.primary }]}>
-            <Text style={styles.unreadText}>{item.unread_count}</Text>
+            <TouchableOpacity
+              onPress={(e) => {
+                e.stopPropagation?.();
+                handleDeleteConversation(item);
+              }}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              style={styles.deleteBtn}
+            >
+              <Trash2 size={16} color={colors.textMuted} />
+            </TouchableOpacity>
           </View>
-        ) : null}
-      </TouchableOpacity>
-    );
-  };
+        </TouchableOpacity>
+      );
+    },
+    [colors, router, user?.id, handleDeleteConversation, queryClient]
+  );
 
   const insets = useSafeAreaInsets();
 
@@ -80,9 +170,12 @@ export default function ConversationsListScreen() {
       <FlatList
         data={conversations}
         keyExtractor={(item) => item.id}
-        ListHeaderComponent={renderHeader}
         renderItem={renderConversationItem}
+        ListHeaderComponent={renderHeader}
         contentContainerStyle={styles.listContent}
+        initialNumToRender={8}
+        maxToRenderPerBatch={10}
+        windowSize={7}
         refreshControl={<RefreshControl refreshing={isLoading} onRefresh={refetch} tintColor={colors.primary} />}
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
@@ -154,12 +247,20 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 6,
-    marginLeft: 8,
   },
   unreadText: {
     color: '#FFFFFF',
     fontSize: 11,
     fontWeight: '800',
+  },
+  rightActionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginLeft: 8,
+  },
+  deleteBtn: {
+    padding: 6,
   },
   emptyContainer: {
     alignItems: 'center',

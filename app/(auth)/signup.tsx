@@ -24,7 +24,7 @@ import { SPACING, RADIUS } from '../../src/constants/theme';
 export default function SignupScreen() {
   const { colors } = useThemeStore();
   const router = useRouter();
-  const { setSession, setUser } = useAuthStore();
+  const { setSession } = useAuthStore();
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);

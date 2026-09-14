@@ -1,8 +1,8 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { ArrowLeft, GraduationCap, Users, BookOpen, MessageSquare } from 'lucide-react-native';
+import { ArrowLeft, GraduationCap } from 'lucide-react-native';
 import { useQuery } from '@tanstack/react-query';
 import { useThemeStore } from '../../../../src/store/useThemeStore';
 import { fetchUniversities, fetchTopStudents } from '../../../../src/services/api.explore';
@@ -11,6 +11,7 @@ import { PostCard } from '../../../../src/components/features/PostCard';
 import { Avatar } from '../../../../src/components/ui/Avatar';
 import { TopStudentBadge } from '../../../../src/components/ui/TopStudentBadge';
 import { SPACING, RADIUS } from '../../../../src/constants/theme';
+import { queryKeys } from '../../../../src/constants/queryKeys';
 
 export default function UniversityScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -18,19 +19,19 @@ export default function UniversityScreen() {
   const router = useRouter();
 
   const { data: universities } = useQuery({
-    queryKey: ['universities'],
+    queryKey: queryKeys.universities.all,
     queryFn: fetchUniversities,
   });
 
   const university = universities?.find((u) => u.id === id) || universities?.[0];
 
   const { data: topStudents } = useQuery({
-    queryKey: ['topStudents', id],
+    queryKey: queryKeys.users.topStudents(id),
     queryFn: () => fetchTopStudents(id),
   });
 
   const { data: posts } = useQuery({
-    queryKey: ['uniPosts', id],
+    queryKey: queryKeys.posts.byUniversity(id as string),
     queryFn: () => fetchPosts({ universityId: id }),
   });
 

@@ -86,30 +86,6 @@ export default function CompleteProfileScreen() {
   );
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    fetchUniversities().then((data) => {
-      if (data && data.length > 0) {
-        setUniversities(data);
-        const defaultUni =
-          data.find((u) => u.name.includes("Cairo University")) || data[0];
-        setSelectedUni(defaultUni);
-        setUniSearchText(defaultUni.name);
-        setValue("universityId", defaultUni.id);
-      }
-    });
-
-    fetchMajors().then((data) => {
-      if (data && data.length > 0) {
-        setMajors(data);
-        const defaultMajor =
-          data.find((m) => m.name.includes("Computer Science")) || data[0];
-        setSelectedMajor(defaultMajor);
-        setMajorSearchText(defaultMajor.name);
-        setValue("major", defaultMajor.name);
-      }
-    });
-  }, []);
-
   const {
     control,
     handleSubmit,
@@ -119,19 +95,49 @@ export default function CompleteProfileScreen() {
   } = useForm<CompleteProfileFormData>({
     resolver: zodResolver(completeProfileSchema),
     defaultValues: {
-      fullName: initialFullName || "John Doe",
-      username: initialUsername || "john_doe",
-      universityId: selectedUni?.id || "",
-      major: selectedMajor?.name || "Computer Science",
-      program: user?.program || "B.Sc. Software Engineering",
-      year: user?.year || "Year 4 (Senior)",
-      semester: "2",
-      gpa: user?.gpa ? user.gpa.toString() : "3.92",
-      bio: user?.bio,
+      fullName: initialFullName || user?.full_name || "",
+      username: initialUsername || user?.username || "",
+      universityId: user?.university_id || "",
+      major: user?.major || "",
+      program: user?.program || "",
+      year: user?.year || "",
+      semester: user?.semester ? user.semester.toString() : "1",
+      gpa: user?.gpa ? user.gpa.toString() : "",
+      bio: user?.bio || "",
     },
   });
 
   const selectedYear = watch("year");
+
+  useEffect(() => {
+    fetchUniversities().then((data) => {
+      if (data && data.length > 0) {
+        setUniversities(data);
+        if (user?.university_id) {
+          const matchedUni = data.find((u) => u.id === user.university_id);
+          if (matchedUni) {
+            setSelectedUni(matchedUni);
+            setUniSearchText(matchedUni.name);
+            setValue("universityId", matchedUni.id);
+          }
+        }
+      }
+    });
+
+    fetchMajors().then((data) => {
+      if (data && data.length > 0) {
+        setMajors(data);
+        if (user?.major) {
+          const matchedMajor = data.find((m) => m.name.toLowerCase() === user.major?.toLowerCase());
+          if (matchedMajor) {
+            setSelectedMajor(matchedMajor);
+            setMajorSearchText(matchedMajor.name);
+            setValue("major", matchedMajor.name);
+          }
+        }
+      }
+    });
+  }, [setValue, user?.university_id, user?.major]);
 
   // Filter Universities
   const filteredUniversities = universities.filter(
@@ -219,8 +225,8 @@ export default function CompleteProfileScreen() {
         avatar_url: publicAvatarUrl,
       });
 
-      router.replace("/(main)");
-    } catch (e) {
+      router.replace("/(main)/(tabs)");
+    } catch {
       Alert.alert("Profile Error", "Failed to update academic profile");
     } finally {
       setLoading(false);

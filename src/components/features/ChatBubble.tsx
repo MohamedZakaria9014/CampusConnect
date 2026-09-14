@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { Image } from 'expo-image';
+import { CheckCheck, Clock, AlertCircle } from 'lucide-react-native';
 import { Message } from '../../types/models';
 import { useThemeStore } from '../../store/useThemeStore';
 import { CodeBlock } from '../ui/CodeBlock';
@@ -50,18 +52,46 @@ export const ChatBubble: React.FC<ChatBubbleProps> = ({ message, isMe }) => {
 
         {message.image_url ? (
           <TouchableOpacity activeOpacity={0.9} onPress={() => setIsFullImageVisible(true)}>
-            <Image source={{ uri: message.image_url }} style={styles.image} />
+            <Image
+              source={{ uri: message.image_url }}
+              contentFit="cover"
+              transition={200}
+              cachePolicy="memory-disk"
+              style={styles.image}
+            />
           </TouchableOpacity>
         ) : null}
 
-        <Text
-          style={[
-            styles.timeText,
-            { color: isMe ? 'rgba(255, 255, 255, 0.7)' : colors.textMuted },
-          ]}
-        >
-          {timeAgo(message.created_at)}
-        </Text>
+        <View style={styles.footerRow}>
+          <Text
+            style={[
+              styles.timeText,
+              { color: isMe ? 'rgba(255, 255, 255, 0.7)' : colors.textMuted },
+            ]}
+          >
+            {timeAgo(message.created_at)}
+          </Text>
+
+          {isMe && (
+            <View style={styles.statusRow}>
+              {message.has_error ? (
+                <AlertCircle size={12} color="#EF4444" />
+              ) : message.is_pending ? (
+                <Clock size={11} color="rgba(255, 255, 255, 0.6)" />
+              ) : message.status === 'seen' ? (
+                <View style={styles.seenBadge}>
+                  <CheckCheck size={13} color="#67E8F9" strokeWidth={2.5} />
+                  <Text style={styles.seenText}>Seen</Text>
+                </View>
+              ) : (
+                <View style={styles.deliveredBadge}>
+                  <CheckCheck size={13} color="rgba(255, 255, 255, 0.7)" strokeWidth={2} />
+                  <Text style={styles.deliveredText}>Delivered</Text>
+                </View>
+              )}
+            </View>
+          )}
+        </View>
       </View>
 
       {message.image_url ? (
@@ -101,9 +131,38 @@ const styles = StyleSheet.create({
     borderRadius: RADIUS.md,
     marginVertical: SPACING.xs,
   },
+  footerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    gap: 6,
+    marginTop: 4,
+  },
   timeText: {
     fontSize: 10,
-    marginTop: 4,
-    alignSelf: 'flex-end',
+  },
+  statusRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  seenBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+  },
+  seenText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#67E8F9',
+  },
+  deliveredBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+  },
+  deliveredText: {
+    fontSize: 10,
+    fontWeight: '500',
+    color: 'rgba(255, 255, 255, 0.7)',
   },
 });

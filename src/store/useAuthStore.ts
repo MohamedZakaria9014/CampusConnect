@@ -1,15 +1,16 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
+import { Session } from '@supabase/supabase-js';
 import { Profile } from '../types/models';
 import { fetchUserProfile, updateUserProfile } from '../services/api.auth';
 import { CustomStorageAdapter } from '../lib/supabase';
 
 interface AuthState {
-  session: any | null;
+  session: Session | null;
   user: Profile | null;
   isLoading: boolean;
   isOnboarded: boolean;
-  setSession: (session: any | null) => void;
+  setSession: (session: Session | null) => void;
   setUser: (user: Profile | null) => void;
   loadUserProfile: (userId: string) => Promise<void>;
   updateProfile: (updates: Partial<Profile>) => Promise<void>;
@@ -44,7 +45,7 @@ export const useAuthStore = create<AuthState>()(
             isOnboarded: !!(profile?.university_id && profile?.major),
             isLoading: false,
           });
-        } catch (e) {
+        } catch {
           set({ isLoading: false });
         }
       },
@@ -60,7 +61,7 @@ export const useAuthStore = create<AuthState>()(
             isOnboarded: !!(updated.university_id && updated.major),
             isLoading: false,
           });
-        } catch (e) {
+        } catch {
           set({ isLoading: false });
         }
       },

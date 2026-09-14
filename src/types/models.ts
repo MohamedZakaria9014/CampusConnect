@@ -111,13 +111,14 @@ export interface Message {
   sender?: Profile;
   is_pending?: boolean;
   has_error?: boolean;
+  status?: 'sending' | 'sent' | 'delivered' | 'seen';
 }
 
 export interface NotificationItem {
   id: string;
   user_id: string;
   actor_id: string;
-  type: 'new_answer' | 'new_comment' | 'answer_upvoted' | 'answer_best' | 'new_message' | 'mention' | 'new_follower' | 'badge_earned';
+  type: 'new_answer' | 'new_comment' | 'answer_upvoted' | 'answer_best' | 'new_message' | 'new_post' | 'mention' | 'new_follower' | 'badge_earned';
   post_id?: string;
   comment_id?: string;
   conversation_id?: string;

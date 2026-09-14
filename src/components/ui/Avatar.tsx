@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Image, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
+import { Image } from 'expo-image';
 import { useThemeStore } from '../../store/useThemeStore';
 
 export interface AvatarProps {
@@ -34,6 +35,9 @@ export const Avatar: React.FC<AvatarProps> = ({
       {url ? (
         <Image
           source={{ uri: url }}
+          contentFit="cover"
+          transition={150}
+          cachePolicy="memory-disk"
           style={[
             styles.image,
             {

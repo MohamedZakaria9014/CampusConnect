@@ -47,3 +47,50 @@ export async function updateUserProfile(userId: string, updates: Partial<Profile
 
   return data as Profile;
 }
+
+export async function checkIsFollowing(followerId: string, followingId: string): Promise<boolean> {
+  if (!followerId || !followingId || followerId === followingId) return false;
+  const { data, error } = await supabase
+    .from('followers')
+    .select('follower_id')
+    .eq('follower_id', followerId)
+    .eq('following_id', followingId)
+    .maybeSingle();
+
+  if (error) {
+    console.error('Error checking follow status:', error.message);
+    return false;
+  }
+  return !!data;
+}
+
+export async function toggleFollowUser(
+  followerId: string,
+  followingId: string,
+  currentlyFollowing: boolean
+): Promise<boolean> {
+  if (!followerId || !followingId || followerId === followingId) return false;
+
+  if (currentlyFollowing) {
+    const { error } = await supabase
+      .from('followers')
+      .delete()
+      .match({ follower_id: followerId, following_id: followingId });
+
+    if (error) {
+      console.error('Error unfollowing user:', error.message);
+      throw error;
+    }
+    return false;
+  } else {
+    const { error } = await supabase
+      .from('followers')
+      .insert({ follower_id: followerId, following_id: followingId });
+
+    if (error) {
+      console.error('Error following user:', error.message);
+      throw error;
+    }
+    return true;
+  }
+}

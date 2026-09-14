@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Text, StyleSheet, Image, TouchableOpacity, Share, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Share, Alert } from 'react-native';
+import { Image } from 'expo-image';
 import { ThumbsUp, MessageSquare, Bookmark, Share2, Eye, CheckCircle2, Trash2 } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { Post } from '../../types/models';
@@ -20,15 +21,18 @@ export interface PostCardProps {
   onDelete?: (postId: string) => void;
 }
 
-export const PostCard: React.FC<PostCardProps> = ({ post, onPress, onDelete }) => {
+const PostCardComponent: React.FC<PostCardProps> = ({ post, onPress, onDelete }) => {
   const { colors } = useThemeStore();
   const router = useRouter();
   const user = useAuthStore((s) => s.user);
 
-  const [isLiked, setIsLiked] = React.useState(post.is_upvoted || false);
-  const [likeCount, setLikeCount] = React.useState(post.upvotes_count || 0);
-  const [isSaved, setIsSaved] = React.useState(post.is_saved || false);
+  const [optimisticLike, setOptimisticLike] = React.useState<{ isLiked: boolean; delta: number } | null>(null);
+  const [optimisticSave, setOptimisticSave] = React.useState<boolean | null>(null);
   const [fullImageUrl, setFullImageUrl] = React.useState<string | null>(null);
+
+  const isLiked = optimisticLike !== null ? optimisticLike.isLiked : (post.is_upvoted || false);
+  const likeCount = Math.max(0, (post.upvotes_count || 0) + (optimisticLike !== null ? optimisticLike.delta : 0));
+  const isSaved = optimisticSave !== null ? optimisticSave : (post.is_saved || false);
 
   const author = post.author;
   const university = post.university || author?.university;
@@ -48,7 +52,7 @@ export const PostCard: React.FC<PostCardProps> = ({ post, onPress, onDelete }) =
             try {
               await deletePost(post.id);
               if (onDelete) onDelete(post.id);
-            } catch (err) {
+            } catch {
               Alert.alert('Error', 'Could not delete question. Please try again.');
             }
           },
@@ -59,20 +63,47 @@ export const PostCard: React.FC<PostCardProps> = ({ post, onPress, onDelete }) =
 
   const handleLike = async (e: any) => {
     e.stopPropagation();
-    const nextState = !isLiked;
-    setIsLiked(nextState);
-    setLikeCount((prev) => (nextState ? prev + 1 : Math.max(0, prev - 1)));
-    if (user) {
-      await togglePostLike(post.id, user.id, isLiked);
+    if (!user) {
+      Alert.alert('Sign In Required', 'Please sign in to upvote questions.', [
+        { text: 'Sign In', onPress: () => router.push('/(auth)/login') },
+        { text: 'Cancel', style: 'cancel' },
+      ]);
+      return;
+    }
+
+    const prevState = isLiked;
+    const nextState = !prevState;
+    const delta = nextState ? (post.is_upvoted ? 0 : 1) : (post.is_upvoted ? -1 : 0);
+
+    setOptimisticLike({ isLiked: nextState, delta });
+
+    try {
+      await togglePostLike(post.id, user.id, prevState);
+    } catch {
+      setOptimisticLike(null);
+      Alert.alert('Error', 'Could not update upvote. Please try again.');
     }
   };
 
   const handleSave = async (e: any) => {
     e.stopPropagation();
-    const nextState = !isSaved;
-    setIsSaved(nextState);
-    if (user) {
-      await toggleSavePost(post.id, user.id, isSaved);
+    if (!user) {
+      Alert.alert('Sign In Required', 'Please sign in to save questions.', [
+        { text: 'Sign In', onPress: () => router.push('/(auth)/login') },
+        { text: 'Cancel', style: 'cancel' },
+      ]);
+      return;
+    }
+
+    const prevState = isSaved;
+    const nextState = !prevState;
+    setOptimisticSave(nextState);
+
+    try {
+      await toggleSavePost(post.id, user.id, prevState);
+    } catch {
+      setOptimisticSave(null);
+      Alert.alert('Error', 'Could not bookmark question. Please try again.');
     }
   };
 
@@ -111,7 +142,10 @@ export const PostCard: React.FC<PostCardProps> = ({ post, onPress, onDelete }) =
               </View>
 
               <Text style={[styles.metaText, { color: colors.textSecondary }]}>
-                @{author?.username || 'user'} • {university?.short_name || 'CU'} • {author?.year || 'Student'}
+                {`@${author?.username || 'student'}`}
+                {university?.short_name || university?.name ? ` • ${university.short_name || university.name}` : ''}
+                {author?.major ? ` • ${author.major}` : ''}
+                {author?.year ? ` • ${author.year}` : ''}
               </Text>
             </View>
           </TouchableOpacity>
@@ -166,7 +200,13 @@ export const PostCard: React.FC<PostCardProps> = ({ post, onPress, onDelete }) =
               setFullImageUrl(post.image_urls![0]);
             }}
           >
-            <Image source={{ uri: post.image_urls[0] }} style={styles.postImage} />
+            <Image
+              source={{ uri: post.image_urls[0] }}
+              contentFit="cover"
+              transition={200}
+              cachePolicy="memory-disk"
+              style={styles.postImage}
+            />
           </TouchableOpacity>
         ) : null}
 
@@ -336,3 +376,5 @@ const styles = StyleSheet.create({
     marginLeft: 4,
   },
 });
+
+export const PostCard = React.memo(PostCardComponent);

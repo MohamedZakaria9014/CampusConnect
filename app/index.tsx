@@ -9,7 +9,7 @@ export default function Index() {
     if (!isOnboarded) {
       return <Redirect href="/(onboarding)/complete-profile" />;
     }
-    return <Redirect href="/(main)" />;
+    return <Redirect href="/(main)/(tabs)" />;
   }
 
   return <Redirect href="/(auth)/login" />;

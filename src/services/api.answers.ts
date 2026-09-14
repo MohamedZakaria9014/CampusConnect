@@ -4,7 +4,8 @@ import { sortAnswers } from '../lib/ranking';
 
 export async function fetchAnswersForPost(
   postId: string,
-  sortBy: 'best' | 'upvoted' | 'top_students' | 'newest' = 'best'
+  sortBy: 'best' | 'upvoted' | 'top_students' | 'newest' = 'best',
+  currentUserId?: string
 ): Promise<CommentAnswer[]> {
   const { data, error } = await supabase
     .from('comments')
@@ -19,10 +20,33 @@ export async function fetchAnswersForPost(
     return [];
   }
 
-  return sortAnswers((data || []) as CommentAnswer[], sortBy);
+  let answers = (data || []) as CommentAnswer[];
+
+  if (currentUserId && answers.length > 0) {
+    const commentIds = answers.map((a) => a.id);
+    const { data: votesData } = await supabase
+      .from('comment_votes')
+      .select('comment_id, vote_type')
+      .eq('user_id', currentUserId)
+      .in('comment_id', commentIds);
+
+    if (votesData && votesData.length > 0) {
+      const voteMap = new Map(votesData.map((v) => [v.comment_id, v.vote_type]));
+      answers = answers.map((a) => ({
+        ...a,
+        user_vote: voteMap.get(a.id) || 0,
+      }));
+    }
+  }
+
+  return sortAnswers(answers, sortBy);
 }
 
 export async function createAnswer(answerData: Partial<CommentAnswer>): Promise<CommentAnswer> {
+  if (!answerData.post_id || !answerData.author_id || !answerData.content) {
+    throw new Error('Missing required fields for answer (post_id, author_id, content)');
+  }
+
   const { data, error } = await supabase
     .from('comments')
     .insert([
@@ -50,21 +74,42 @@ export async function createAnswer(answerData: Partial<CommentAnswer>): Promise<
   return data as CommentAnswer;
 }
 
-export async function voteAnswer(commentId: string, userId: string, voteType: 1 | -1 | 0) {
+export async function voteAnswer(commentId: string, userId: string, voteType: 1 | -1 | 0): Promise<void> {
   if (voteType === 0) {
-    await supabase.from('comment_votes').delete().match({ comment_id: commentId, user_id: userId });
+    const { error } = await supabase.from('comment_votes').delete().match({ comment_id: commentId, user_id: userId });
+    if (error) {
+      console.error('Error deleting answer vote:', error.message);
+      throw error;
+    }
   } else {
-    await supabase.from('comment_votes').upsert(
+    const { error } = await supabase.from('comment_votes').upsert(
       { comment_id: commentId, user_id: userId, vote_type: voteType },
       { onConflict: 'comment_id,user_id' }
     );
+    if (error) {
+      console.error('Error upserting answer vote:', error.message);
+      throw error;
+    }
   }
 }
 
-export async function markBestAnswer(postId: string, commentId: string) {
-  await supabase.from('comments').update({ is_best_answer: false }).eq('post_id', postId);
-  await supabase.from('comments').update({ is_best_answer: true }).eq('id', commentId);
-  await supabase.from('posts').update({ is_solved: true }).eq('id', postId);
+export async function markBestAnswer(postId: string, commentId: string): Promise<void> {
+  const { error: resetErr } = await supabase.from('comments').update({ is_best_answer: false }).eq('post_id', postId);
+  if (resetErr) {
+    console.error('Error resetting best answers:', resetErr.message);
+    throw resetErr;
+  }
+
+  const { error: markErr } = await supabase.from('comments').update({ is_best_answer: true }).eq('id', commentId);
+  if (markErr) {
+    console.error('Error marking best answer:', markErr.message);
+    throw markErr;
+  }
+
+  const { error: postErr } = await supabase.from('posts').update({ is_solved: true }).eq('id', postId);
+  if (postErr) {
+    console.error('Error marking post solved:', postErr.message);
+  }
 }
 
 export async function fetchAnswersForUser(userId: string): Promise<CommentAnswer[]> {

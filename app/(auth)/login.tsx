@@ -57,7 +57,7 @@ export default function LoginScreen() {
       if (authData.session) {
         setSession(authData.session);
         await loadUserProfile(authData.user.id);
-        router.replace('/(main)');
+        router.replace('/(main)/(tabs)');
       }
     } catch (err: any) {
       setErrorMessage(err.message || 'An error occurred during login');
@@ -68,9 +68,9 @@ export default function LoginScreen() {
 
   const handleQuickDemoLogin = async () => {
     setLoading(true);
-    setSession({ user: { id: 'a0000000-0000-0000-0000-000000000001' } });
+    setSession({ user: { id: 'a0000000-0000-0000-0000-000000000001' } } as any);
     await loadUserProfile('a0000000-0000-0000-0000-000000000001');
-    router.replace('/(main)');
+    router.replace('/(main)/(tabs)');
     setLoading(false);
   };
 
@@ -181,7 +181,7 @@ export default function LoginScreen() {
         {/* Footer Link */}
         <View style={styles.footerRow}>
           <Text style={[styles.footerText, { color: colors.textSecondary }]}>
-            Don't have an account?{' '}
+            {"Don't have an account? "}
           </Text>
           <TouchableOpacity onPress={() => router.push('/(auth)/signup')}>
             <Text style={[styles.footerLink, { color: colors.primary }]}>Sign Up</Text>

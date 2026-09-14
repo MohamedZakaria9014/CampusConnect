@@ -2,6 +2,7 @@ import 'react-native-url-polyfill/auto';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createClient } from '@supabase/supabase-js';
 import { Platform } from 'react-native';
+import { Database } from '../types/database.types';
 
 // Memory storage fallback in case AsyncStorage native module is null/unlinked
 const memoryStore = new Map<string, string>();
@@ -13,7 +14,7 @@ export const CustomStorageAdapter = {
         return window.localStorage.getItem(key);
       }
       return await AsyncStorage.getItem(key);
-    } catch (e) {
+    } catch {
       return memoryStore.get(key) || null;
     }
   },
@@ -24,7 +25,7 @@ export const CustomStorageAdapter = {
         return;
       }
       await AsyncStorage.setItem(key, value);
-    } catch (e) {
+    } catch {
       memoryStore.set(key, value);
     }
   },
@@ -35,7 +36,7 @@ export const CustomStorageAdapter = {
         return;
       }
       await AsyncStorage.removeItem(key);
-    } catch (e) {
+    } catch {
       memoryStore.delete(key);
     }
   },
@@ -44,7 +45,7 @@ export const CustomStorageAdapter = {
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || 'https://ozgjvnafnjedbhejdcut.supabase.co';
 const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || 'sb_publishable_0OTeGiVR_Tjzcfv_2c4WFQ_1XVkJWX7';
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
   auth: {
     storage: CustomStorageAdapter,
     autoRefreshToken: true,

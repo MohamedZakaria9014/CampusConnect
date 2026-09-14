@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   RefreshControl,
   ScrollView,
+  Platform,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -19,6 +20,7 @@ import { PostCard } from '../../../src/components/features/PostCard';
 import { Skeleton } from '../../../src/components/ui/Skeleton';
 import { CATEGORIES, CategoryType } from '../../../src/constants/categories';
 import { SPACING, RADIUS } from '../../../src/constants/theme';
+import { queryKeys } from '../../../src/constants/queryKeys';
 import { Post } from '../../../src/types/models';
 
 export default function HomeFeedScreen() {
@@ -36,12 +38,13 @@ export default function HomeFeedScreen() {
     isError,
     refetch,
   } = useQuery({
-    queryKey: ['posts', selectedCategory, filterMode],
+    queryKey: queryKeys.posts.list(selectedCategory, filterMode, user?.id, user?.university_id),
     queryFn: () =>
       fetchPosts({
         category: selectedCategory,
         filter: filterMode,
         universityId: user?.university_id,
+        currentUserId: user?.id,
       }),
   });
 
@@ -51,110 +54,128 @@ export default function HomeFeedScreen() {
     setRefreshing(false);
   }, [refetch]);
 
-  const renderHeader = () => (
-    <View style={styles.listHeader}>
-      {/* Top Bar Header */}
-      <View style={styles.topBar}>
-        <View style={styles.brandRow}>
-          <View style={[styles.brandLogo, { backgroundColor: colors.primary }]}>
-            <GraduationCap size={22} color="#FFFFFF" />
+  const renderHeader = useCallback(
+    () => (
+      <View style={styles.listHeader}>
+        {/* Top Bar Header */}
+        <View style={styles.topBar}>
+          <View style={styles.brandRow}>
+            <View style={[styles.brandLogo, { backgroundColor: colors.primary }]}>
+              <GraduationCap size={22} color="#FFFFFF" />
+            </View>
+            <Text style={[styles.appName, { color: colors.text }]}>Campus Connect</Text>
           </View>
-          <Text style={[styles.appName, { color: colors.text }]}>Campus Connect</Text>
+
+          <TouchableOpacity
+            onPress={() => router.push('/(main)/notifications')}
+            style={[styles.iconCircleBtn, { backgroundColor: colors.surfaceSecondary }]}
+          >
+            <Bell size={20} color={colors.text} />
+            <View style={[styles.notifDot, { backgroundColor: colors.primary }]} />
+          </TouchableOpacity>
         </View>
 
-        <TouchableOpacity
-          onPress={() => router.push('/(main)/notifications')}
-          style={[styles.iconCircleBtn, { backgroundColor: colors.surfaceSecondary }]}
-        >
-          <Bell size={20} color={colors.text} />
-          <View style={[styles.notifDot, { backgroundColor: colors.primary }]} />
-        </TouchableOpacity>
+        {/* Filter Tabs: For You / Trending / Unanswered */}
+        <View style={styles.filterBar}>
+          <TouchableOpacity
+            onPress={() => setFilterMode('all')}
+            style={[
+              styles.filterPill,
+              filterMode === 'all' && { backgroundColor: colors.primary },
+            ]}
+          >
+            <Sparkles size={14} color={filterMode === 'all' ? '#FFFFFF' : colors.textSecondary} />
+            <Text style={[styles.filterPillText, { color: filterMode === 'all' ? '#FFFFFF' : colors.textSecondary }]}>
+              For You
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            onPress={() => setFilterMode('trending')}
+            style={[
+              styles.filterPill,
+              filterMode === 'trending' && { backgroundColor: colors.primary },
+            ]}
+          >
+            <Flame size={14} color={filterMode === 'trending' ? '#FFFFFF' : colors.textSecondary} />
+            <Text style={[styles.filterPillText, { color: filterMode === 'trending' ? '#FFFFFF' : colors.textSecondary }]}>
+              Trending
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            onPress={() => setFilterMode('unanswered')}
+            style={[
+              styles.filterPill,
+              filterMode === 'unanswered' && { backgroundColor: colors.primary },
+            ]}
+          >
+            <Text style={[styles.filterPillText, { color: filterMode === 'unanswered' ? '#FFFFFF' : colors.textSecondary }]}>
+              Needs Answer
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Subject Category Pills */}
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryScroll}>
+          {CATEGORIES.map((cat) => {
+            const isSelected = selectedCategory === cat.id;
+            return (
+              <TouchableOpacity
+                key={cat.id}
+                onPress={() => setSelectedCategory(cat.id)}
+                style={[
+                  styles.categoryChip,
+                  {
+                    backgroundColor: isSelected ? colors.primaryLight + '25' : colors.surfaceSecondary,
+                    borderColor: isSelected ? colors.primary : 'transparent',
+                  },
+                ]}
+              >
+                <Text style={[styles.categoryChipText, { color: isSelected ? colors.primary : colors.text }]}>
+                  {cat.label}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
       </View>
-
-      {/* Filter Tabs: For You / Trending / Unanswered */}
-      <View style={styles.filterBar}>
-        <TouchableOpacity
-          onPress={() => setFilterMode('all')}
-          style={[
-            styles.filterPill,
-            filterMode === 'all' && { backgroundColor: colors.primary },
-          ]}
-        >
-          <Sparkles size={14} color={filterMode === 'all' ? '#FFFFFF' : colors.textSecondary} />
-          <Text style={[styles.filterPillText, { color: filterMode === 'all' ? '#FFFFFF' : colors.textSecondary }]}>
-            For You
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          onPress={() => setFilterMode('trending')}
-          style={[
-            styles.filterPill,
-            filterMode === 'trending' && { backgroundColor: colors.primary },
-          ]}
-        >
-          <Flame size={14} color={filterMode === 'trending' ? '#FFFFFF' : colors.textSecondary} />
-          <Text style={[styles.filterPillText, { color: filterMode === 'trending' ? '#FFFFFF' : colors.textSecondary }]}>
-            Trending
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          onPress={() => setFilterMode('unanswered')}
-          style={[
-            styles.filterPill,
-            filterMode === 'unanswered' && { backgroundColor: colors.primary },
-          ]}
-        >
-          <Text style={[styles.filterPillText, { color: filterMode === 'unanswered' ? '#FFFFFF' : colors.textSecondary }]}>
-            Needs Answer
-          </Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Subject Category Pills */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryScroll}>
-        {CATEGORIES.map((cat) => {
-          const isSelected = selectedCategory === cat.id;
-          return (
-            <TouchableOpacity
-              key={cat.id}
-              onPress={() => setSelectedCategory(cat.id)}
-              style={[
-                styles.categoryChip,
-                {
-                  backgroundColor: isSelected ? colors.primaryLight + '25' : colors.surfaceSecondary,
-                  borderColor: isSelected ? colors.primary : 'transparent',
-                },
-              ]}
-            >
-              <Text style={[styles.categoryChipText, { color: isSelected ? colors.primary : colors.text }]}>
-                {cat.label}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
-      </ScrollView>
-    </View>
+    ),
+    [colors, filterMode, selectedCategory, router]
   );
 
   const insets = useSafeAreaInsets();
+
+  const keyExtractor = useCallback((item: Post) => item.id, []);
+
+  const handlePostPress = useCallback(
+    (postId: string) => {
+      router.push(`/(main)/post/${postId}` as any);
+    },
+    [router]
+  );
+
+  const renderItem = useCallback(
+    ({ item }: { item: Post }) => (
+      <View style={{ paddingHorizontal: SPACING.lg }}>
+        <PostCard post={item} onPress={() => handlePostPress(item.id)} />
+      </View>
+    ),
+    [handlePostPress]
+  );
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background, paddingTop: insets.top }]}>
       <FlatList
         data={posts}
-        keyExtractor={(item) => item.id}
+        keyExtractor={keyExtractor}
+        renderItem={renderItem}
         ListHeaderComponent={renderHeader}
-        renderItem={({ item }) => (
-          <View style={{ paddingHorizontal: SPACING.lg }}>
-            <PostCard
-              post={item}
-              onPress={() => router.push(`/(main)/post/${item.id}` as any)}
-            />
-          </View>
-        )}
         contentContainerStyle={styles.listContent}
+        initialNumToRender={6}
+        maxToRenderPerBatch={8}
+        windowSize={7}
+        removeClippedSubviews={Platform.OS === 'android'}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
         }

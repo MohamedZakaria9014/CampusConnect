@@ -6,30 +6,32 @@ import {
   ScrollView,
   TouchableOpacity,
   TextInput,
-  Image,
   RefreshControl,
   KeyboardAvoidingView,
   Platform,
+  Alert,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
-import { ArrowLeft, MessageSquare, Send, Code, Award, CheckCircle2, Image as ImageIcon, X } from 'lucide-react-native';
+import { ArrowLeft, MessageSquare, Send, Code, Image as ImageIcon, X, CheckCircle2 } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { uploadImageToSupabase } from '../../../src/services/storage';
 import { useThemeStore } from '../../../src/store/useThemeStore';
 import { useAuthStore } from '../../../src/store/useAuthStore';
 import { fetchPostById } from '../../../src/services/api.posts';
 import { fetchAnswersForPost, createAnswer } from '../../../src/services/api.answers';
+import { createNotification } from '../../../src/services/api.notifications';
 import { AnswerCard } from '../../../src/components/features/AnswerCard';
 import { Avatar } from '../../../src/components/ui/Avatar';
 import { TopStudentBadge } from '../../../src/components/ui/TopStudentBadge';
 import { CodeBlock } from '../../../src/components/ui/CodeBlock';
-import { Button } from '../../../src/components/ui/Button';
 import { ImageViewerModal } from '../../../src/components/ui/ImageViewerModal';
-import { timeAgo, formatCount } from '../../../src/utils/formatters';
+import { timeAgo } from '../../../src/utils/formatters';
 import { SPACING, RADIUS } from '../../../src/constants/theme';
 import { AnswerSortOption, CommentAnswer } from '../../../src/types/models';
+import { queryKeys } from '../../../src/constants/queryKeys';
 
 export default function PostDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -40,7 +42,7 @@ export default function PostDetailScreen() {
   const [sortOption, setSortOption] = useState<AnswerSortOption>('best');
   const [answerText, setAnswerText] = useState('');
   const [codeSnippet, setCodeSnippet] = useState('');
-  const [codeLanguage, setCodeLanguage] = useState('cpp');
+  const [codeLanguage] = useState('cpp');
   const [showCode, setShowCode] = useState(false);
   const [answerLocalImages, setAnswerLocalImages] = useState<string[]>([]);
   const [viewerImageUrl, setViewerImageUrl] = useState<string | null>(null);
@@ -48,13 +50,13 @@ export default function PostDetailScreen() {
   const [refreshing, setRefreshing] = useState(false);
 
   const { data: post, isLoading: postLoading, refetch: refetchPost } = useQuery({
-    queryKey: ['post', id],
-    queryFn: () => fetchPostById(id as string),
+    queryKey: queryKeys.posts.detail(id as string, user?.id),
+    queryFn: () => fetchPostById(id as string, user?.id),
   });
 
-  const { data: answers, isLoading: answersLoading, refetch: refetchAnswers } = useQuery({
-    queryKey: ['answers', id, sortOption],
-    queryFn: () => fetchAnswersForPost(id as string, sortOption),
+  const { data: answers, refetch: refetchAnswers } = useQuery({
+    queryKey: queryKeys.answers.byPost(id as string, sortOption, user?.id),
+    queryFn: () => fetchAnswersForPost(id as string, sortOption, user?.id),
   });
 
   const onRefresh = async () => {
@@ -80,6 +82,14 @@ export default function PostDetailScreen() {
   };
 
   const handlePostAnswer = async () => {
+    if (!user?.id) {
+      Alert.alert('Sign In Required', 'Please sign in to answer this question.', [
+        { text: 'Sign In', onPress: () => router.push('/(auth)/login') },
+        { text: 'Cancel', style: 'cancel' },
+      ]);
+      return;
+    }
+
     if (!answerText.trim() && answerLocalImages.length === 0) return;
     setIsSubmitting(true);
     try {
@@ -90,13 +100,25 @@ export default function PostDetailScreen() {
 
       await createAnswer({
         post_id: id as string,
-        author_id: user?.id || 'u1111111-1111-1111-1111-111111111111',
+        author_id: user.id,
         content: answerText,
         code_snippet: codeSnippet || undefined,
         code_language: codeLanguage,
         image_urls: uploadedUrls,
-        author: user || undefined,
+        author: user,
       });
+
+      // Send notification to question author if not self
+      if (post?.author_id && post.author_id !== user.id) {
+        createNotification({
+          user_id: post.author_id,
+          actor_id: user.id,
+          type: 'new_answer',
+          post_id: id as string,
+          title: 'New Answer on your Question',
+          body: `${user.full_name || 'A student'} answered "${(post.title || '').substring(0, 35)}..."`,
+        });
+      }
 
       setAnswerText('');
       setCodeSnippet('');
@@ -117,7 +139,7 @@ export default function PostDetailScreen() {
     return (
       <View style={[styles.container, { backgroundColor: colors.background, paddingTop: insets.top }]}>
         <View style={styles.topHeader}>
-          <TouchableOpacity onPress={() => router.back()}>
+          <TouchableOpacity onPress={() => (router.canGoBack() ? router.back() : router.replace('/(main)/(tabs)'))}>
             <ArrowLeft size={24} color={colors.text} />
           </TouchableOpacity>
         </View>
@@ -135,7 +157,10 @@ export default function PostDetailScreen() {
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
         {/* Top Bar Header */}
         <View style={[styles.topHeader, { borderColor: colors.border }]}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.iconBtn}>
+          <TouchableOpacity
+            onPress={() => (router.canGoBack() ? router.back() : router.replace('/(main)/(tabs)'))}
+            style={styles.iconBtn}
+          >
             <ArrowLeft size={24} color={colors.text} />
           </TouchableOpacity>
           <Text style={[styles.headerTitle, { color: colors.text }]} numberOfLines={1}>
@@ -158,7 +183,9 @@ export default function PostDetailScreen() {
                   {author?.is_top_student && <TopStudentBadge size="sm" />}
                 </View>
                 <Text style={[styles.subMeta, { color: colors.textSecondary }]}>
-                  @{author?.username} · {author?.university?.short_name || 'CU'} · {author?.major}
+                  {`@${author?.username || 'student'}`}
+                  {author?.university?.short_name || author?.university?.name ? ` · ${author.university.short_name || author.university.name}` : ''}
+                  {author?.major ? ` · ${author.major}` : ''}
                 </Text>
               </View>
               <Text style={[styles.timeAgo, { color: colors.textMuted }]}>{timeAgo(post.created_at)}</Text>
@@ -189,7 +216,13 @@ export default function PostDetailScreen() {
             ) : null}
 
             {post.image_urls && post.image_urls.length > 0 ? (
-              <Image source={{ uri: post.image_urls[0] }} style={styles.postImage} />
+              <Image
+                source={{ uri: post.image_urls[0] }}
+                contentFit="cover"
+                transition={200}
+                cachePolicy="memory-disk"
+                style={styles.postImage}
+              />
             ) : null}
           </View>
 

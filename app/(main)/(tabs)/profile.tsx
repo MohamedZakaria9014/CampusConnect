@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { useFocusEffect, useRouter } from "expo-router";
+import { useRouter } from "expo-router";
 import {
   Award,
   Bookmark,
@@ -8,8 +8,13 @@ import {
   MessageSquare,
   PlusCircle,
   Settings,
+  Calculator,
+  Code,
+  Heart,
+  CheckCircle2,
+  Lock,
 } from "lucide-react-native";
-import React, { useCallback, useState } from "react";
+import React, { useState } from "react";
 import {
   ActivityIndicator,
   ScrollView,
@@ -23,7 +28,8 @@ import { AnswerCard } from "../../../src/components/features/AnswerCard";
 import { PostCard } from "../../../src/components/features/PostCard";
 import { Avatar } from "../../../src/components/ui/Avatar";
 import { TopStudentBadge } from "../../../src/components/ui/TopStudentBadge";
-import { PREDEFINED_BADGES } from "../../../src/constants/badges";
+import { PREDEFINED_BADGES, isBadgeEarned } from "../../../src/constants/badges";
+import { BadgesShowcaseModal } from "../../../src/components/features/BadgesShowcaseModal";
 import { RADIUS, SPACING } from "../../../src/constants/theme";
 import { evaluateTopStudentStatus } from "../../../src/lib/topStudent";
 import { fetchAnswersForUser } from "../../../src/services/api.answers";
@@ -31,6 +37,7 @@ import { fetchPosts, fetchSavedPosts } from "../../../src/services/api.posts";
 import { useAuthStore } from "../../../src/store/useAuthStore";
 import { useThemeStore } from "../../../src/store/useThemeStore";
 import { formatGPA } from "../../../src/utils/formatters";
+import { queryKeys } from "../../../src/constants/queryKeys";
 
 export default function ProfileScreen() {
   const { colors } = useThemeStore();
@@ -41,6 +48,7 @@ export default function ProfileScreen() {
   const [activeTab, setActiveTab] = useState<"posts" | "answers" | "saved">(
     "posts",
   );
+  const [showBadgesModal, setShowBadgesModal] = useState(false);
 
   const userId = user?.id || "";
 
@@ -50,7 +58,7 @@ export default function ProfileScreen() {
     refetch: refetchPosts,
     isLoading: isPostsLoading,
   } = useQuery({
-    queryKey: ["userPosts", userId],
+    queryKey: queryKeys.posts.userPosts(userId),
     queryFn: () => fetchPosts({ userId }),
     enabled: !!userId,
   });
@@ -61,7 +69,7 @@ export default function ProfileScreen() {
     refetch: refetchAnswers,
     isLoading: isAnswersLoading,
   } = useQuery({
-    queryKey: ["userAnswers", userId],
+    queryKey: queryKeys.answers.userAnswers(userId),
     queryFn: () => fetchAnswersForUser(userId),
     enabled: !!userId,
   });
@@ -72,20 +80,10 @@ export default function ProfileScreen() {
     refetch: refetchSaved,
     isLoading: isSavedLoading,
   } = useQuery({
-    queryKey: ["savedPosts", userId],
+    queryKey: queryKeys.posts.userSaved(userId),
     queryFn: () => fetchSavedPosts(userId),
     enabled: !!userId,
   });
-
-  // Refetch active tab query when profile screen gains focus
-  useFocusEffect(
-    useCallback(() => {
-      if (!userId) return;
-      refetchPosts();
-      refetchAnswers();
-      refetchSaved();
-    }, [userId]),
-  );
 
   const topStudentEval = evaluateTopStudentStatus(user || {});
 
@@ -151,8 +149,7 @@ export default function ProfileScreen() {
                   <Text
                     style={[styles.academicPillText, { color: colors.primary }]}
                   >
-                    {user?.university?.short_name || "CU"} ·{" "}
-                    {user?.major || "Computer Science"}
+                    {[user?.university?.short_name || user?.university?.name, user?.major].filter(Boolean).join(" · ") || "Student Profile"}
                   </Text>
                 </View>
                 {user?.year ? (
@@ -360,44 +357,94 @@ export default function ProfileScreen() {
 
         {/* Earned Badges Showcase */}
         <View style={styles.sectionMargin}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>
-            Earned Badges
-          </Text>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: SPACING.md }}>
+            <Text style={[styles.sectionTitle, { color: colors.text, marginBottom: 0 }]}>
+              Academic Badges & Honors
+            </Text>
+            <TouchableOpacity
+              onPress={() => setShowBadgesModal(true)}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <Text style={[styles.seeAllBadgesText, { color: colors.primary }]}>
+                View All ({PREDEFINED_BADGES.length})
+              </Text>
+            </TouchableOpacity>
+          </View>
+
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
             style={styles.badgeScroll}
           >
-            {PREDEFINED_BADGES.map((badge) => (
-              <View
-                key={badge.slug}
-                style={[
-                  styles.badgeCard,
-                  {
-                    backgroundColor: colors.surface,
-                    borderColor: colors.border,
-                  },
-                ]}
-              >
-                <View
+            {PREDEFINED_BADGES.map((badge) => {
+              const earned = isBadgeEarned(badge.slug, user);
+              const renderIcon = () => {
+                const iconColor = earned ? badge.color : colors.textMuted;
+                switch (badge.iconName) {
+                  case 'calculator':
+                    return <Calculator size={22} color={iconColor} />;
+                  case 'code':
+                    return <Code size={22} color={iconColor} />;
+                  case 'heart':
+                    return <Heart size={22} color={iconColor} />;
+                  case 'check-circle':
+                    return <CheckCircle2 size={22} color={iconColor} />;
+                  default:
+                    return <Award size={22} color={iconColor} />;
+                }
+              };
+
+              return (
+                <TouchableOpacity
+                  key={badge.slug}
+                  onPress={() => setShowBadgesModal(true)}
                   style={[
-                    styles.badgeIconCircle,
-                    { backgroundColor: badge.color + "20" },
+                    styles.badgeCard,
+                    {
+                      backgroundColor: colors.surface,
+                      borderColor: earned ? badge.color : colors.border,
+                      borderWidth: earned ? 1.5 : 1,
+                    },
                   ]}
                 >
-                  <Award size={24} color={badge.color} />
-                </View>
-                <Text style={[styles.badgeName, { color: colors.text }]}>
-                  {badge.name}
-                </Text>
-                <Text
-                  style={[styles.badgeDesc, { color: colors.textSecondary }]}
-                  numberOfLines={2}
-                >
-                  {badge.description}
-                </Text>
-              </View>
-            ))}
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', width: '100%', marginBottom: 6 }}>
+                    <View
+                      style={[
+                        styles.badgeIconCircle,
+                        { backgroundColor: earned ? badge.bgTint : colors.surfaceSecondary },
+                      ]}
+                    >
+                      {renderIcon()}
+                    </View>
+                    <View
+                      style={[
+                        styles.badgeMiniStatus,
+                        { backgroundColor: earned ? 'rgba(16, 185, 129, 0.15)' : colors.surfaceSecondary },
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.badgeMiniStatusText,
+                          { color: earned ? '#10B981' : colors.textMuted },
+                        ]}
+                      >
+                        {earned ? 'Earned' : 'Locked'}
+                      </Text>
+                    </View>
+                  </View>
+
+                  <Text style={[styles.badgeName, { color: colors.text }]}>
+                    {badge.name}
+                  </Text>
+                  <Text
+                    style={[styles.badgeDesc, { color: colors.textSecondary }]}
+                    numberOfLines={2}
+                  >
+                    {badge.description}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
           </ScrollView>
         </View>
 
@@ -560,6 +607,12 @@ export default function ProfileScreen() {
             </View>
           ))}
       </ScrollView>
+
+      <BadgesShowcaseModal
+        visible={showBadgesModal}
+        onClose={() => setShowBadgesModal(false)}
+        user={user}
+      />
     </View>
   );
 }
@@ -716,6 +769,20 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "800",
     marginBottom: SPACING.md,
+  },
+  seeAllBadgesText: {
+    fontSize: 13,
+    fontWeight: "700",
+  },
+  badgeMiniStatus: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: RADIUS.full,
+  },
+  badgeMiniStatusText: {
+    fontSize: 10,
+    fontWeight: "700",
+    textTransform: "uppercase",
   },
   badgeScroll: {
     flexDirection: "row",
