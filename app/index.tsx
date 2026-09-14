@@ -1,7 +1,8 @@
-import React from 'react';
-import { Redirect } from 'expo-router';
-import { useAuthStore } from '../src/store/useAuthStore';
+import React from "react";
+import { Redirect } from "expo-router";
+import { useAuthStore } from "../src/store/useAuthStore";
 
+// ss
 export default function Index() {
   const { session, isOnboarded } = useAuthStore();
 
