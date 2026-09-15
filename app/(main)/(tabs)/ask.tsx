@@ -1,3 +1,3 @@
-import AskScreen from '../ask';
+import AskScreen from "../ask";
 
 export default AskScreen;

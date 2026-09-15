@@ -1,7 +1,7 @@
-import React from 'react';
-import { View, StyleSheet, ViewProps, ViewStyle } from 'react-native';
-import { useThemeStore } from '../../store/useThemeStore';
-import { SPACING, RADIUS, SHADOWS } from '../../constants/theme';
+import React from "react";
+import { View, StyleSheet, ViewProps, ViewStyle } from "react-native";
+import { useThemeStore } from "../../store/useThemeStore";
+import { SPACING, RADIUS, SHADOWS } from "../../constants/theme";
 
 export interface CardProps extends ViewProps {
   style?: ViewStyle;
@@ -16,7 +16,7 @@ export const Card: React.FC<CardProps> = ({ style, children, ...rest }) => {
       style={[
         styles.card,
         {
-          backgroundColor: mode === 'dark' ? colors.card : colors.surface,
+          backgroundColor: mode === "dark" ? colors.card : colors.surface,
           borderColor: colors.border,
         },
         SHADOWS.small,

@@ -1,18 +1,24 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
-import { Image } from 'expo-image';
-import { ArrowBigUp, ArrowBigDown, CheckCircle2, MessageCircle, HelpCircle } from 'lucide-react-native';
-import { CommentAnswer } from '../../types/models';
-import { useThemeStore } from '../../store/useThemeStore';
-import { Avatar } from '../ui/Avatar';
-import { TopStudentBadge } from '../ui/TopStudentBadge';
-import { CodeBlock } from '../ui/CodeBlock';
-import { ImageViewerModal } from '../ui/ImageViewerModal';
-import { timeAgo, formatGPA } from '../../utils/formatters';
-import { SPACING, RADIUS } from '../../constants/theme';
-import { voteAnswer, markBestAnswer } from '../../services/api.answers';
-import { useAuthStore } from '../../store/useAuthStore';
-import { useRouter } from 'expo-router';
+import React from "react";
+import { View, Text, StyleSheet, TouchableOpacity, Alert } from "react-native";
+import { Image } from "expo-image";
+import {
+  ArrowBigUp,
+  ArrowBigDown,
+  CheckCircle2,
+  MessageCircle,
+  HelpCircle,
+} from "lucide-react-native";
+import { CommentAnswer } from "../../types/models";
+import { useThemeStore } from "../../store/useThemeStore";
+import { Avatar } from "../ui/Avatar";
+import { TopStudentBadge } from "../ui/TopStudentBadge";
+import { CodeBlock } from "../ui/CodeBlock";
+import { ImageViewerModal } from "../ui/ImageViewerModal";
+import { timeAgo, formatGPA } from "../../utils/formatters";
+import { SPACING, RADIUS } from "../../constants/theme";
+import { voteAnswer, markBestAnswer } from "../../services/api.answers";
+import { useAuthStore } from "../../store/useAuthStore";
+import { useRouter } from "expo-router";
 
 export interface AnswerCardProps {
   answer: CommentAnswer;
@@ -20,27 +26,42 @@ export interface AnswerCardProps {
   onRefresh?: () => void;
 }
 
-const AnswerCardComponent: React.FC<AnswerCardProps> = ({ answer, postAuthorId, onRefresh }) => {
+const AnswerCardComponent: React.FC<AnswerCardProps> = ({
+  answer,
+  postAuthorId,
+  onRefresh,
+}) => {
   const { colors } = useThemeStore();
   const user = useAuthStore((s) => s.user);
   const router = useRouter();
 
-  const [optimisticVote, setOptimisticVote] = React.useState<{ vote: number; delta: number } | null>(null);
-  const [optimisticBest, setOptimisticBest] = React.useState<boolean | null>(null);
+  const [optimisticVote, setOptimisticVote] = React.useState<{
+    vote: number;
+    delta: number;
+  } | null>(null);
+  const [optimisticBest, setOptimisticBest] = React.useState<boolean | null>(
+    null,
+  );
   const [fullImageUrl, setFullImageUrl] = React.useState<string | null>(null);
 
-  const voteState = optimisticVote !== null ? optimisticVote.vote : (answer.user_vote || 0);
-  const upvotesCount = Math.max(0, (answer.upvotes_count || 0) + (optimisticVote !== null ? optimisticVote.delta : 0));
-  const isBest = optimisticBest !== null ? optimisticBest : (answer.is_best_answer || false);
+  const voteState =
+    optimisticVote !== null ? optimisticVote.vote : answer.user_vote || 0;
+  const upvotesCount = Math.max(
+    0,
+    (answer.upvotes_count || 0) +
+      (optimisticVote !== null ? optimisticVote.delta : 0),
+  );
+  const isBest =
+    optimisticBest !== null ? optimisticBest : answer.is_best_answer || false;
 
   const author = answer.author;
   const isPostAuthor = user?.id === postAuthorId;
 
   const handleVote = async (targetVote: 1 | -1) => {
     if (!user) {
-      Alert.alert('Sign In Required', 'Please sign in to vote on answers.', [
-        { text: 'Sign In', onPress: () => router.push('/(auth)/login') },
-        { text: 'Cancel', style: 'cancel' },
+      Alert.alert("Sign In Required", "Please sign in to vote on answers.", [
+        { text: "Sign In", onPress: () => router.push("/(auth)/login") },
+        { text: "Cancel", style: "cancel" },
       ]);
       return;
     }
@@ -56,7 +77,7 @@ const AnswerCardComponent: React.FC<AnswerCardProps> = ({ answer, postAuthorId, 
       await voteAnswer(answer.id, user.id, nextVote as any);
     } catch {
       setOptimisticVote(null);
-      Alert.alert('Error', 'Failed to update vote. Please try again.');
+      Alert.alert("Error", "Failed to update vote. Please try again.");
     }
   };
 
@@ -68,7 +89,7 @@ const AnswerCardComponent: React.FC<AnswerCardProps> = ({ answer, postAuthorId, 
       if (onRefresh) onRefresh();
     } catch {
       setOptimisticBest(null);
-      Alert.alert('Error', 'Failed to select best answer. Please try again.');
+      Alert.alert("Error", "Failed to select best answer. Please try again.");
     }
   };
 
@@ -94,50 +115,83 @@ const AnswerCardComponent: React.FC<AnswerCardProps> = ({ answer, postAuthorId, 
         <TouchableOpacity
           activeOpacity={0.85}
           onPress={() => router.push(`/(main)/post/${answer.post_id}` as any)}
-          style={[styles.questionHeaderBar, { backgroundColor: colors.surfaceSecondary, borderColor: colors.border }]}
+          style={[
+            styles.questionHeaderBar,
+            {
+              backgroundColor: colors.surfaceSecondary,
+              borderColor: colors.border,
+            },
+          ]}
         >
           <HelpCircle size={14} color={colors.primary} />
-          <Text style={[styles.questionHeaderText, { color: colors.textSecondary }]} numberOfLines={1}>
-            Question: <Text style={{ color: colors.text, fontWeight: '700' }}>{answer.post.title}</Text>
+          <Text
+            style={[styles.questionHeaderText, { color: colors.textSecondary }]}
+            numberOfLines={1}
+          >
+            Question:{" "}
+            <Text style={{ color: colors.text, fontWeight: "700" }}>
+              {answer.post.title}
+            </Text>
           </Text>
         </TouchableOpacity>
       )}
 
       {/* Best Answer Banner */}
       {isBest && (
-        <View style={[styles.bestBanner, { backgroundColor: colors.accent + '20' }]}>
+        <View
+          style={[styles.bestBanner, { backgroundColor: colors.accent + "20" }]}
+        >
           <CheckCircle2 size={16} color={colors.accent} />
-          <Text style={[styles.bestBannerText, { color: colors.accent }]}>BEST ANSWER SELECTED BY AUTHOR</Text>
+          <Text style={[styles.bestBannerText, { color: colors.accent }]}>
+            BEST ANSWER SELECTED BY AUTHOR
+          </Text>
         </View>
       )}
 
       {/* Header: Author Info */}
       <View style={styles.header}>
-        <Avatar url={author?.avatar_url} name={author?.full_name || 'Student'} size={40} />
+        <Avatar
+          url={author?.avatar_url}
+          name={author?.full_name || "Student"}
+          size={40}
+        />
         <View style={styles.authorMeta}>
           <View style={styles.nameRow}>
-            <Text style={[styles.authorName, { color: colors.text }]}>{author?.full_name || 'Student'}</Text>
+            <Text style={[styles.authorName, { color: colors.text }]}>
+              {author?.full_name || "Student"}
+            </Text>
             {author?.is_top_student && <TopStudentBadge size="sm" />}
           </View>
           <Text style={[styles.subMeta, { color: colors.textSecondary }]}>
-            GPA: {formatGPA(author?.gpa)} • Rep: {author?.reputation || 0} • {author?.major || 'Student'}
+            GPA: {formatGPA(author?.gpa)} • Rep: {author?.reputation || 0} •{" "}
+            {author?.major || "Student"}
           </Text>
         </View>
 
-        <Text style={[styles.timeText, { color: colors.textMuted }]}>{timeAgo(answer.created_at)}</Text>
+        <Text style={[styles.timeText, { color: colors.textMuted }]}>
+          {timeAgo(answer.created_at)}
+        </Text>
       </View>
 
       {/* Answer Content */}
-      <Text style={[styles.content, { color: colors.text }]}>{answer.content}</Text>
+      <Text style={[styles.content, { color: colors.text }]}>
+        {answer.content}
+      </Text>
 
       {/* Code Snippet if present */}
       {answer.code_snippet ? (
-        <CodeBlock code={answer.code_snippet} language={answer.code_language || 'code'} />
+        <CodeBlock
+          code={answer.code_snippet}
+          language={answer.code_language || "code"}
+        />
       ) : null}
 
       {/* Image attachments if present */}
       {answer.image_urls && answer.image_urls.length > 0 ? (
-        <TouchableOpacity activeOpacity={0.9} onPress={() => setFullImageUrl(answer.image_urls![0])}>
+        <TouchableOpacity
+          activeOpacity={0.9}
+          onPress={() => setFullImageUrl(answer.image_urls![0])}
+        >
           <Image
             source={{ uri: answer.image_urls[0] }}
             contentFit="cover"
@@ -157,28 +211,60 @@ const AnswerCardComponent: React.FC<AnswerCardProps> = ({ answer, postAuthorId, 
       {/* Footer Controls */}
       <View style={[styles.footer, { borderColor: colors.border }]}>
         {/* Upvote & Downvote Pill */}
-        <View style={[styles.voteContainer, { backgroundColor: colors.surfaceSecondary }]}>
-          <TouchableOpacity onPress={() => handleVote(1)} style={styles.voteBtn}>
-            <ArrowBigUp size={20} color={voteState === 1 ? colors.primary : colors.icon} fill={voteState === 1 ? colors.primary : 'transparent'} />
+        <View
+          style={[
+            styles.voteContainer,
+            { backgroundColor: colors.surfaceSecondary },
+          ]}
+        >
+          <TouchableOpacity
+            onPress={() => handleVote(1)}
+            style={styles.voteBtn}
+          >
+            <ArrowBigUp
+              size={20}
+              color={voteState === 1 ? colors.primary : colors.icon}
+              fill={voteState === 1 ? colors.primary : "transparent"}
+            />
           </TouchableOpacity>
-          <Text style={[styles.voteCountText, { color: voteState !== 0 ? colors.primary : colors.text }]}>
+          <Text
+            style={[
+              styles.voteCountText,
+              { color: voteState !== 0 ? colors.primary : colors.text },
+            ]}
+          >
             {upvotesCount}
           </Text>
-          <TouchableOpacity onPress={() => handleVote(-1)} style={styles.voteBtn}>
-            <ArrowBigDown size={20} color={voteState === -1 ? colors.error : colors.icon} fill={voteState === -1 ? colors.error : 'transparent'} />
+          <TouchableOpacity
+            onPress={() => handleVote(-1)}
+            style={styles.voteBtn}
+          >
+            <ArrowBigDown
+              size={20}
+              color={voteState === -1 ? colors.error : colors.icon}
+              fill={voteState === -1 ? colors.error : "transparent"}
+            />
           </TouchableOpacity>
         </View>
 
-        <TouchableOpacity onPress={handleStartChat} style={styles.directChatBtn}>
+        <TouchableOpacity
+          onPress={handleStartChat}
+          style={styles.directChatBtn}
+        >
           <MessageCircle size={16} color={colors.primary} />
-          <Text style={[styles.directChatText, { color: colors.primary }]}>Message Student</Text>
+          <Text style={[styles.directChatText, { color: colors.primary }]}>
+            Message Student
+          </Text>
         </TouchableOpacity>
 
         <View style={styles.flexSpacer} />
 
         {/* Mark Best Answer Action for Post Author */}
         {isPostAuthor && !isBest && (
-          <TouchableOpacity onPress={handleMarkBest} style={[styles.markBestBtn, { backgroundColor: colors.accent }]}>
+          <TouchableOpacity
+            onPress={handleMarkBest}
+            style={[styles.markBestBtn, { backgroundColor: colors.accent }]}
+          >
             <CheckCircle2 size={14} color="#FFFFFF" />
             <Text style={styles.markBestText}>Mark Best</Text>
           </TouchableOpacity>
@@ -195,8 +281,8 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.md,
   },
   bestBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingHorizontal: SPACING.md,
     paddingVertical: 6,
     borderRadius: RADIUS.md,
@@ -205,12 +291,12 @@ const styles = StyleSheet.create({
   },
   bestBannerText: {
     fontSize: 11,
-    fontWeight: '800',
+    fontWeight: "800",
     letterSpacing: 0.5,
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginBottom: SPACING.xs,
   },
   authorMeta: {
@@ -218,13 +304,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   nameRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 6,
   },
   authorName: {
     fontSize: 15,
-    fontWeight: '700',
+    fontWeight: "700",
   },
   subMeta: {
     fontSize: 12,
@@ -239,21 +325,21 @@ const styles = StyleSheet.create({
     marginVertical: SPACING.xs,
   },
   answerImage: {
-    width: '100%',
+    width: "100%",
     height: 160,
     borderRadius: RADIUS.md,
     marginVertical: SPACING.xs,
   },
   footer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingTop: SPACING.xs + 4,
     borderTopWidth: 1,
     marginTop: SPACING.xs,
   },
   voteContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     borderRadius: RADIUS.full,
     paddingHorizontal: 4,
     paddingVertical: 2,
@@ -263,38 +349,38 @@ const styles = StyleSheet.create({
   },
   voteCountText: {
     fontSize: 13,
-    fontWeight: '700',
+    fontWeight: "700",
     paddingHorizontal: 4,
   },
   directChatBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginLeft: SPACING.md,
     gap: 4,
   },
   directChatText: {
     fontSize: 13,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   flexSpacer: {
     flex: 1,
   },
   markBestBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: RADIUS.sm,
     gap: 4,
   },
   markBestText: {
-    color: '#FFFFFF',
+    color: "#FFFFFF",
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: "700",
   },
   questionHeaderBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingHorizontal: SPACING.md,
     paddingVertical: 8,
     borderRadius: RADIUS.md,

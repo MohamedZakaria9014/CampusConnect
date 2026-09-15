@@ -1,15 +1,15 @@
-import { useEffect } from 'react';
-import * as Haptics from 'expo-haptics';
-import { useQueryClient } from '@tanstack/react-query';
-import { supabase } from '../lib/supabase';
-import { useAuthStore } from '../store/useAuthStore';
-import { getUnreadMessagesCount } from '../services/api.chat';
-import { queryKeys } from '../constants/queryKeys';
-import { scheduleLocalNotification } from '../lib/notifications';
-import { NotificationItem } from '../types/models';
+import { useEffect } from "react";
+import * as Haptics from "expo-haptics";
+import { useQueryClient } from "@tanstack/react-query";
+import { supabase } from "../lib/supabase";
+import { useAuthStore } from "../store/useAuthStore";
+import { getUnreadMessagesCount } from "../services/api.chat";
+import { queryKeys } from "../constants/queryKeys";
+import { scheduleLocalNotification } from "../lib/notifications";
+import { NotificationItem } from "../types/models";
 
-import { useChatStore } from '../store/useChatStore';
-import { markNotificationAsRead } from '../services/api.notifications';
+import { useChatStore } from "../store/useChatStore";
+import { markNotificationAsRead } from "../services/api.notifications";
 
 export function useRealtimeNotifications() {
   const user = useAuthStore((s) => s.user);
@@ -27,11 +27,11 @@ export function useRealtimeNotifications() {
     const channel = supabase
       .channel(`user_notifications:${user.id}`)
       .on(
-        'postgres_changes',
+        "postgres_changes",
         {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'notifications',
+          event: "INSERT",
+          schema: "public",
+          table: "notifications",
           filter: `user_id=eq.${user.id}`,
         },
         async (payload) => {
@@ -42,10 +42,12 @@ export function useRealtimeNotifications() {
           const activeConvId = useChatStore.getState().activeConversationId;
           const activeUserId = useChatStore.getState().activeChatUserId;
           const isChatOpenForThisNotif =
-            newNotif.type === 'new_message' &&
-            ((newNotif.conversation_id && newNotif.conversation_id === activeConvId) ||
+            newNotif.type === "new_message" &&
+            ((newNotif.conversation_id &&
+              newNotif.conversation_id === activeConvId) ||
               (newNotif.actor_id &&
-                (newNotif.actor_id === activeUserId || newNotif.actor_id === activeConvId)));
+                (newNotif.actor_id === activeUserId ||
+                  newNotif.actor_id === activeConvId)));
 
           if (isChatOpenForThisNotif) {
             // User is actively inside this chat right now!
@@ -55,10 +57,14 @@ export function useRealtimeNotifications() {
           }
 
           // Invalidate notifications queries so badges and list update
-          queryClient.invalidateQueries({ queryKey: queryKeys.notifications.list(user.id) });
+          queryClient.invalidateQueries({
+            queryKey: queryKeys.notifications.list(user.id),
+          });
 
           // Gentle haptic feedback
-          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+          Haptics.notificationAsync(
+            Haptics.NotificationFeedbackType.Success,
+          ).catch(() => {});
 
           // Local in-app notification alert if supported
           if (newNotif.title && newNotif.body) {
@@ -70,11 +76,13 @@ export function useRealtimeNotifications() {
           }
 
           // If it's a message notification, re-sync unread messages count
-          if (newNotif.type === 'new_message') {
+          if (newNotif.type === "new_message") {
             getUnreadMessagesCount(user.id).catch(() => {});
-            queryClient.invalidateQueries({ queryKey: queryKeys.chat.conversations(user.id) });
+            queryClient.invalidateQueries({
+              queryKey: queryKeys.chat.conversations(user.id),
+            });
           }
-        }
+        },
       )
       .subscribe();
 

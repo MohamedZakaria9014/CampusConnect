@@ -1,5 +1,5 @@
-import { Stack } from 'expo-router';
-import { useThemeStore } from '../../src/store/useThemeStore';
+import { Stack } from "expo-router";
+import { useThemeStore } from "../../src/store/useThemeStore";
 
 export default function AuthLayout() {
   const { colors } = useThemeStore();

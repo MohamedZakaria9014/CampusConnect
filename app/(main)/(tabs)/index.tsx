@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback } from "react";
 import {
   View,
   Text,
@@ -8,28 +8,36 @@ import {
   RefreshControl,
   ScrollView,
   Platform,
-} from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
-import { Bell, Flame, Sparkles, GraduationCap, Plus } from 'lucide-react-native';
-import { useQuery } from '@tanstack/react-query';
-import { useThemeStore } from '../../../src/store/useThemeStore';
-import { useAuthStore } from '../../../src/store/useAuthStore';
-import { fetchPosts } from '../../../src/services/api.posts';
-import { PostCard } from '../../../src/components/features/PostCard';
-import { Skeleton } from '../../../src/components/ui/Skeleton';
-import { CATEGORIES, CategoryType } from '../../../src/constants/categories';
-import { SPACING, RADIUS } from '../../../src/constants/theme';
-import { queryKeys } from '../../../src/constants/queryKeys';
-import { Post } from '../../../src/types/models';
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useRouter } from "expo-router";
+import {
+  Bell,
+  Flame,
+  Sparkles,
+  GraduationCap,
+  Plus,
+} from "lucide-react-native";
+import { useQuery } from "@tanstack/react-query";
+import { useThemeStore } from "../../../src/store/useThemeStore";
+import { useAuthStore } from "../../../src/store/useAuthStore";
+import { fetchPosts } from "../../../src/services/api.posts";
+import { PostCard } from "../../../src/components/features/PostCard";
+import { Skeleton } from "../../../src/components/ui/Skeleton";
+import { CATEGORIES, CategoryType } from "../../../src/constants/categories";
+import { SPACING, RADIUS } from "../../../src/constants/theme";
+import { queryKeys } from "../../../src/constants/queryKeys";
+import { Post } from "../../../src/types/models";
 
 export default function HomeFeedScreen() {
   const { colors } = useThemeStore();
   const router = useRouter();
   const user = useAuthStore((s) => s.user);
 
-  const [selectedCategory, setSelectedCategory] = useState<CategoryType>('All');
-  const [filterMode, setFilterMode] = useState<'all' | 'trending' | 'unanswered'>('all');
+  const [selectedCategory, setSelectedCategory] = useState<CategoryType>("All");
+  const [filterMode, setFilterMode] = useState<
+    "all" | "trending" | "unanswered"
+  >("all");
   const [refreshing, setRefreshing] = useState(false);
 
   const {
@@ -38,7 +46,12 @@ export default function HomeFeedScreen() {
     isError,
     refetch,
   } = useQuery({
-    queryKey: queryKeys.posts.list(selectedCategory, filterMode, user?.id, user?.university_id),
+    queryKey: queryKeys.posts.list(
+      selectedCategory,
+      filterMode,
+      user?.id,
+      user?.university_id,
+    ),
     queryFn: () =>
       fetchPosts({
         category: selectedCategory,
@@ -60,64 +73,115 @@ export default function HomeFeedScreen() {
         {/* Top Bar Header */}
         <View style={styles.topBar}>
           <View style={styles.brandRow}>
-            <View style={[styles.brandLogo, { backgroundColor: colors.primary }]}>
+            <View
+              style={[styles.brandLogo, { backgroundColor: colors.primary }]}
+            >
               <GraduationCap size={22} color="#FFFFFF" />
             </View>
-            <Text style={[styles.appName, { color: colors.text }]}>Campus Connect</Text>
+            <Text style={[styles.appName, { color: colors.text }]}>
+              Campus Connect
+            </Text>
           </View>
 
           <TouchableOpacity
-            onPress={() => router.push('/(main)/notifications')}
-            style={[styles.iconCircleBtn, { backgroundColor: colors.surfaceSecondary }]}
+            onPress={() => router.push("/(main)/notifications")}
+            style={[
+              styles.iconCircleBtn,
+              { backgroundColor: colors.surfaceSecondary },
+            ]}
           >
             <Bell size={20} color={colors.text} />
-            <View style={[styles.notifDot, { backgroundColor: colors.primary }]} />
+            <View
+              style={[styles.notifDot, { backgroundColor: colors.primary }]}
+            />
           </TouchableOpacity>
         </View>
 
         {/* Filter Tabs: For You / Trending / Unanswered */}
         <View style={styles.filterBar}>
           <TouchableOpacity
-            onPress={() => setFilterMode('all')}
+            onPress={() => setFilterMode("all")}
             style={[
               styles.filterPill,
-              filterMode === 'all' && { backgroundColor: colors.primary },
+              filterMode === "all" && { backgroundColor: colors.primary },
             ]}
           >
-            <Sparkles size={14} color={filterMode === 'all' ? '#FFFFFF' : colors.textSecondary} />
-            <Text style={[styles.filterPillText, { color: filterMode === 'all' ? '#FFFFFF' : colors.textSecondary }]}>
+            <Sparkles
+              size={14}
+              color={filterMode === "all" ? "#FFFFFF" : colors.textSecondary}
+            />
+            <Text
+              style={[
+                styles.filterPillText,
+                {
+                  color:
+                    filterMode === "all" ? "#FFFFFF" : colors.textSecondary,
+                },
+              ]}
+            >
               For You
             </Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            onPress={() => setFilterMode('trending')}
+            onPress={() => setFilterMode("trending")}
             style={[
               styles.filterPill,
-              filterMode === 'trending' && { backgroundColor: colors.primary },
+              filterMode === "trending" && { backgroundColor: colors.primary },
             ]}
           >
-            <Flame size={14} color={filterMode === 'trending' ? '#FFFFFF' : colors.textSecondary} />
-            <Text style={[styles.filterPillText, { color: filterMode === 'trending' ? '#FFFFFF' : colors.textSecondary }]}>
+            <Flame
+              size={14}
+              color={
+                filterMode === "trending" ? "#FFFFFF" : colors.textSecondary
+              }
+            />
+            <Text
+              style={[
+                styles.filterPillText,
+                {
+                  color:
+                    filterMode === "trending"
+                      ? "#FFFFFF"
+                      : colors.textSecondary,
+                },
+              ]}
+            >
               Trending
             </Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            onPress={() => setFilterMode('unanswered')}
+            onPress={() => setFilterMode("unanswered")}
             style={[
               styles.filterPill,
-              filterMode === 'unanswered' && { backgroundColor: colors.primary },
+              filterMode === "unanswered" && {
+                backgroundColor: colors.primary,
+              },
             ]}
           >
-            <Text style={[styles.filterPillText, { color: filterMode === 'unanswered' ? '#FFFFFF' : colors.textSecondary }]}>
+            <Text
+              style={[
+                styles.filterPillText,
+                {
+                  color:
+                    filterMode === "unanswered"
+                      ? "#FFFFFF"
+                      : colors.textSecondary,
+                },
+              ]}
+            >
               Needs Answer
             </Text>
           </TouchableOpacity>
         </View>
 
         {/* Subject Category Pills */}
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryScroll}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.categoryScroll}
+        >
           {CATEGORIES.map((cat) => {
             const isSelected = selectedCategory === cat.id;
             return (
@@ -127,12 +191,19 @@ export default function HomeFeedScreen() {
                 style={[
                   styles.categoryChip,
                   {
-                    backgroundColor: isSelected ? colors.primaryLight + '25' : colors.surfaceSecondary,
-                    borderColor: isSelected ? colors.primary : 'transparent',
+                    backgroundColor: isSelected
+                      ? colors.primaryLight + "25"
+                      : colors.surfaceSecondary,
+                    borderColor: isSelected ? colors.primary : "transparent",
                   },
                 ]}
               >
-                <Text style={[styles.categoryChipText, { color: isSelected ? colors.primary : colors.text }]}>
+                <Text
+                  style={[
+                    styles.categoryChipText,
+                    { color: isSelected ? colors.primary : colors.text },
+                  ]}
+                >
                   {cat.label}
                 </Text>
               </TouchableOpacity>
@@ -141,7 +212,7 @@ export default function HomeFeedScreen() {
         </ScrollView>
       </View>
     ),
-    [colors, filterMode, selectedCategory, router]
+    [colors, filterMode, selectedCategory, router],
   );
 
   const insets = useSafeAreaInsets();
@@ -152,7 +223,7 @@ export default function HomeFeedScreen() {
     (postId: string) => {
       router.push(`/(main)/post/${postId}` as any);
     },
-    [router]
+    [router],
   );
 
   const renderItem = useCallback(
@@ -161,11 +232,16 @@ export default function HomeFeedScreen() {
         <PostCard post={item} onPress={() => handlePostPress(item.id)} />
       </View>
     ),
-    [handlePostPress]
+    [handlePostPress],
   );
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background, paddingTop: insets.top }]}>
+    <View
+      style={[
+        styles.container,
+        { backgroundColor: colors.background, paddingTop: insets.top },
+      ]}
+    >
       <FlatList
         data={posts}
         keyExtractor={keyExtractor}
@@ -175,9 +251,13 @@ export default function HomeFeedScreen() {
         initialNumToRender={6}
         maxToRenderPerBatch={8}
         windowSize={7}
-        removeClippedSubviews={Platform.OS === 'android'}
+        removeClippedSubviews={Platform.OS === "android"}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={colors.primary}
+          />
         }
         ListEmptyComponent={
           isLoading ? (
@@ -188,19 +268,26 @@ export default function HomeFeedScreen() {
             </View>
           ) : isError ? (
             <View style={styles.emptyContainer}>
-              <Text style={[styles.emptyTitle, { color: colors.text }]}>Failed to load questions</Text>
-              <TouchableOpacity onPress={() => refetch()} style={[styles.retryBtn, { backgroundColor: colors.primary }]}>
+              <Text style={[styles.emptyTitle, { color: colors.text }]}>
+                Failed to load questions
+              </Text>
+              <TouchableOpacity
+                onPress={() => refetch()}
+                style={[styles.retryBtn, { backgroundColor: colors.primary }]}
+              >
                 <Text style={styles.retryText}>Retry</Text>
               </TouchableOpacity>
             </View>
           ) : (
             <View style={styles.emptyContainer}>
-              <Text style={[styles.emptyTitle, { color: colors.text }]}>No questions found</Text>
+              <Text style={[styles.emptyTitle, { color: colors.text }]}>
+                No questions found
+              </Text>
               <Text style={[styles.emptySub, { color: colors.textSecondary }]}>
                 Be the first student to ask a question in this subject!
               </Text>
               <TouchableOpacity
-                onPress={() => router.push('/(main)/ask')}
+                onPress={() => router.push("/(main)/ask")}
                 style={[styles.retryBtn, { backgroundColor: colors.primary }]}
               >
                 <Plus size={16} color="#FFFFFF" />
@@ -225,39 +312,39 @@ const styles = StyleSheet.create({
     paddingTop: SPACING.md,
   },
   topBar: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     paddingHorizontal: SPACING.lg,
     marginBottom: SPACING.md,
   },
   brandRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
   },
   brandLogo: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     marginRight: 10,
   },
   appName: {
     fontSize: 22,
-    fontWeight: '800',
+    fontWeight: "800",
     letterSpacing: -0.5,
   },
   iconCircleBtn: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-    position: 'relative',
+    justifyContent: "center",
+    alignItems: "center",
+    position: "relative",
   },
   notifDot: {
-    position: 'absolute',
+    position: "absolute",
     top: 10,
     right: 10,
     width: 8,
@@ -265,14 +352,14 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   filterBar: {
-    flexDirection: 'row',
+    flexDirection: "row",
     paddingHorizontal: SPACING.lg,
     gap: 8,
     marginBottom: SPACING.md,
   },
   filterPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: RADIUS.full,
@@ -280,7 +367,7 @@ const styles = StyleSheet.create({
   },
   filterPillText: {
     fontSize: 13,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   categoryScroll: {
     paddingLeft: SPACING.lg,
@@ -295,37 +382,37 @@ const styles = StyleSheet.create({
   },
   categoryChipText: {
     fontSize: 13,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   skeletonContainer: {
     paddingHorizontal: SPACING.lg,
     marginTop: SPACING.md,
   },
   emptyContainer: {
-    alignItems: 'center',
+    alignItems: "center",
     padding: SPACING.xxl,
     marginTop: SPACING.xl,
   },
   emptyTitle: {
     fontSize: 18,
-    fontWeight: '700',
+    fontWeight: "700",
   },
   emptySub: {
     fontSize: 14,
-    textAlign: 'center',
+    textAlign: "center",
     marginTop: 6,
     marginBottom: SPACING.lg,
   },
   retryBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingHorizontal: SPACING.lg,
     paddingVertical: 10,
     borderRadius: RADIUS.md,
     gap: 6,
   },
   retryText: {
-    color: '#FFFFFF',
-    fontWeight: '700',
+    color: "#FFFFFF",
+    fontWeight: "700",
   },
 });

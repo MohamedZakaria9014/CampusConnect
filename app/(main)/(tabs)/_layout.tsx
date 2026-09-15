@@ -1,10 +1,16 @@
-import React from 'react';
-import { Tabs, useRouter } from 'expo-router';
-import { View, TouchableOpacity, StyleSheet, Text } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Home, Compass, PlusCircle, MessageSquare, User } from 'lucide-react-native';
-import { useThemeStore } from '../../../src/store/useThemeStore';
-import { useChatStore } from '../../../src/store/useChatStore';
+import React from "react";
+import { Tabs, useRouter } from "expo-router";
+import { View, TouchableOpacity, StyleSheet, Text } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import {
+  Home,
+  Compass,
+  PlusCircle,
+  MessageSquare,
+  User,
+} from "lucide-react-native";
+import { useThemeStore } from "../../../src/store/useThemeStore";
+import { useChatStore } from "../../../src/store/useChatStore";
 
 export default function TabsLayout() {
   const { colors } = useThemeStore();
@@ -16,45 +22,51 @@ export default function TabsLayout() {
 
   return (
     <Tabs
-      screenOptions={{
-        headerShown: false,
-        tabBarShowLabel: true,
-        tabBarActiveTintColor: colors.primary,
-        tabBarInactiveTintColor: colors.textMuted,
-        sceneContainerStyle: { backgroundColor: colors.background },
-        tabBarStyle: {
-          backgroundColor: colors.surface,
-          borderTopWidth: 0.5,
-          borderTopColor: colors.border + '60',
-          height: 52 + (bottomInset > 0 ? bottomInset - 4 : 8),
-          paddingBottom: bottomInset > 0 ? bottomInset - 6 : 6,
-          paddingTop: 6,
-          elevation: 8,
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: -2 },
-          shadowOpacity: 0.05,
-          shadowRadius: 6,
-          overflow: 'visible',
-        },
-        tabBarLabelStyle: {
-          fontSize: 11,
-          fontWeight: '600',
-        },
-      } as any}
+      screenOptions={
+        {
+          headerShown: false,
+          tabBarShowLabel: true,
+          tabBarActiveTintColor: colors.primary,
+          tabBarInactiveTintColor: colors.textMuted,
+          sceneContainerStyle: { backgroundColor: colors.background },
+          tabBarStyle: {
+            backgroundColor: colors.surface,
+            borderTopWidth: 0.5,
+            borderTopColor: colors.border + "60",
+            height: 52 + (bottomInset > 0 ? bottomInset - 4 : 8),
+            paddingBottom: bottomInset > 0 ? bottomInset - 6 : 6,
+            paddingTop: 6,
+            elevation: 8,
+            shadowColor: "#000",
+            shadowOffset: { width: 0, height: -2 },
+            shadowOpacity: 0.05,
+            shadowRadius: 6,
+            overflow: "visible",
+          },
+          tabBarLabelStyle: {
+            fontSize: 11,
+            fontWeight: "600",
+          },
+        } as any
+      }
     >
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Feed',
-          tabBarIcon: ({ color, size }) => <Home size={size - 2} color={color} />,
+          title: "Feed",
+          tabBarIcon: ({ color, size }) => (
+            <Home size={size - 2} color={color} />
+          ),
         }}
       />
 
       <Tabs.Screen
         name="explore"
         options={{
-          title: 'Explore',
-          tabBarIcon: ({ color, size }) => <Compass size={size - 2} color={color} />,
+          title: "Explore",
+          tabBarIcon: ({ color, size }) => (
+            <Compass size={size - 2} color={color} />
+          ),
         }}
       />
 
@@ -62,21 +74,33 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="ask"
         options={{
-          title: 'Ask',
-          tabBarIcon: ({ size }) => <PlusCircle size={size + 4} color={colors.primary} />,
+          title: "Ask",
+          tabBarIcon: ({ size }) => (
+            <PlusCircle size={size + 4} color={colors.primary} />
+          ),
           tabBarButton: (props) => {
             const { delayLongPress, ...restProps } = props as any;
             return (
               <TouchableOpacity
                 {...restProps}
                 activeOpacity={0.85}
-                onPress={() => router.push('/(main)/ask')}
+                onPress={() => router.push("/(main)/ask")}
                 style={[props.style, styles.askTabBtn]}
               >
-                <View style={[styles.askIconCircle, { backgroundColor: colors.primary, shadowColor: colors.primary }]}>
+                <View
+                  style={[
+                    styles.askIconCircle,
+                    {
+                      backgroundColor: colors.primary,
+                      shadowColor: colors.primary,
+                    },
+                  ]}
+                >
                   <PlusCircle size={24} color="#FFFFFF" />
                 </View>
-                <Text style={[styles.askLabelText, { color: colors.primary }]}>Ask</Text>
+                <Text style={[styles.askLabelText, { color: colors.primary }]}>
+                  Ask
+                </Text>
               </TouchableOpacity>
             );
           },
@@ -86,9 +110,9 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="messages"
         options={{
-          title: 'Messages',
+          title: "Messages",
           tabBarIcon: ({ color, size }) => (
-            <View style={{ position: 'relative' }}>
+            <View style={{ position: "relative" }}>
               <MessageSquare size={size - 2} color={color} />
               {unreadCount > 0 && (
                 <View style={[styles.badge, { backgroundColor: colors.error }]}>
@@ -103,8 +127,10 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="profile"
         options={{
-          title: 'Profile',
-          tabBarIcon: ({ color, size }) => <User size={size - 2} color={color} />,
+          title: "Profile",
+          tabBarIcon: ({ color, size }) => (
+            <User size={size - 2} color={color} />
+          ),
         }}
       />
     </Tabs>
@@ -113,43 +139,43 @@ export default function TabsLayout() {
 
 const styles = StyleSheet.create({
   askTabBtn: {
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     top: -6,
-    overflow: 'visible',
+    overflow: "visible",
   },
   askIconCircle: {
     width: 46,
     height: 46,
     borderRadius: 23,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.45,
     shadowRadius: 8,
     elevation: 8,
     borderWidth: 2,
-    borderColor: 'rgba(255, 255, 255, 0.25)',
+    borderColor: "rgba(255, 255, 255, 0.25)",
   },
   askLabelText: {
     fontSize: 10,
-    fontWeight: '700',
+    fontWeight: "700",
     marginTop: 2,
   },
   badge: {
-    position: 'absolute',
+    position: "absolute",
     top: -4,
     right: -8,
     minWidth: 16,
     height: 16,
     borderRadius: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     paddingHorizontal: 3,
   },
   badgeText: {
-    color: '#FFFFFF',
+    color: "#FFFFFF",
     fontSize: 10,
-    fontWeight: '800',
+    fontWeight: "800",
   },
 });

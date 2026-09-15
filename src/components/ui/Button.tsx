@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 import {
   TouchableOpacity,
   Text,
@@ -7,14 +7,14 @@ import {
   TouchableOpacityProps,
   ViewStyle,
   TextStyle,
-} from 'react-native';
-import { useThemeStore } from '../../store/useThemeStore';
-import { SPACING, RADIUS } from '../../constants/theme';
+} from "react-native";
+import { useThemeStore } from "../../store/useThemeStore";
+import { SPACING, RADIUS } from "../../constants/theme";
 
 export interface ButtonProps extends TouchableOpacityProps {
   title: string;
-  variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger';
-  size?: 'sm' | 'md' | 'lg';
+  variant?: "primary" | "secondary" | "outline" | "ghost" | "danger";
+  size?: "sm" | "md" | "lg";
   loading?: boolean;
   icon?: React.ReactNode;
   style?: ViewStyle;
@@ -23,8 +23,8 @@ export interface ButtonProps extends TouchableOpacityProps {
 
 export const Button: React.FC<ButtonProps> = ({
   title,
-  variant = 'primary',
-  size = 'md',
+  variant = "primary",
+  size = "md",
   loading = false,
   icon,
   disabled,
@@ -36,52 +36,72 @@ export const Button: React.FC<ButtonProps> = ({
 
   const getVariantStyles = (): { container: ViewStyle; text: TextStyle } => {
     switch (variant) {
-      case 'secondary':
+      case "secondary":
         return {
-          container: { backgroundColor: colors.surfaceSecondary, borderWidth: 1, borderColor: colors.border },
+          container: {
+            backgroundColor: colors.surfaceSecondary,
+            borderWidth: 1,
+            borderColor: colors.border,
+          },
           text: { color: colors.text },
         };
-      case 'outline':
+      case "outline":
         return {
-          container: { backgroundColor: 'transparent', borderWidth: 1.5, borderColor: colors.primary },
+          container: {
+            backgroundColor: "transparent",
+            borderWidth: 1.5,
+            borderColor: colors.primary,
+          },
           text: { color: colors.primary },
         };
-      case 'ghost':
+      case "ghost":
         return {
-          container: { backgroundColor: 'transparent' },
+          container: { backgroundColor: "transparent" },
           text: { color: colors.primary },
         };
-      case 'danger':
+      case "danger":
         return {
           container: { backgroundColor: colors.error },
-          text: { color: '#FFFFFF' },
+          text: { color: "#FFFFFF" },
         };
-      case 'primary':
+      case "primary":
       default:
         return {
           container: { backgroundColor: colors.primary },
-          text: { color: '#FFFFFF' },
+          text: { color: "#FFFFFF" },
         };
     }
   };
 
   const getSizeStyles = (): { container: ViewStyle; text: TextStyle } => {
     switch (size) {
-      case 'sm':
+      case "sm":
         return {
-          container: { paddingVertical: SPACING.xs, paddingHorizontal: SPACING.md, borderRadius: RADIUS.md },
-          text: { fontSize: 13, fontWeight: '600' },
+          container: {
+            paddingVertical: SPACING.xs,
+            paddingHorizontal: SPACING.md,
+            borderRadius: RADIUS.md,
+          },
+          text: { fontSize: 13, fontWeight: "600" },
         };
-      case 'lg':
+      case "lg":
         return {
-          container: { paddingVertical: SPACING.lg, paddingHorizontal: SPACING.xl, borderRadius: RADIUS.lg },
-          text: { fontSize: 17, fontWeight: '700' },
+          container: {
+            paddingVertical: SPACING.lg,
+            paddingHorizontal: SPACING.xl,
+            borderRadius: RADIUS.lg,
+          },
+          text: { fontSize: 17, fontWeight: "700" },
         };
-      case 'md':
+      case "md":
       default:
         return {
-          container: { paddingVertical: SPACING.md, paddingHorizontal: SPACING.lg, borderRadius: RADIUS.md },
-          text: { fontSize: 15, fontWeight: '600' },
+          container: {
+            paddingVertical: SPACING.md,
+            paddingHorizontal: SPACING.lg,
+            borderRadius: RADIUS.md,
+          },
+          text: { fontSize: 15, fontWeight: "600" },
         };
     }
   };
@@ -107,7 +127,15 @@ export const Button: React.FC<ButtonProps> = ({
       ) : (
         <>
           {icon}
-          <Text style={[styles.text, vStyles.text, sStyles.text, icon ? { marginLeft: 8 } : null, textStyle]}>
+          <Text
+            style={[
+              styles.text,
+              vStyles.text,
+              sStyles.text,
+              icon ? { marginLeft: 8 } : null,
+              textStyle,
+            ]}
+          >
             {title}
           </Text>
         </>
@@ -118,12 +146,12 @@ export const Button: React.FC<ButtonProps> = ({
 
 const styles = StyleSheet.create({
   button: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
   },
   text: {
-    textAlign: 'center',
+    textAlign: "center",
   },
   disabled: {
     opacity: 0.5,

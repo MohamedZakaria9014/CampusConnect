@@ -1,7 +1,7 @@
-import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import { Image } from 'expo-image';
-import { useThemeStore } from '../../store/useThemeStore';
+import React from "react";
+import { View, Text, StyleSheet } from "react-native";
+import { Image } from "expo-image";
+import { useThemeStore } from "../../store/useThemeStore";
 
 export interface AvatarProps {
   url?: string;
@@ -13,7 +13,7 @@ export interface AvatarProps {
 
 export const Avatar: React.FC<AvatarProps> = ({
   url,
-  name = 'User',
+  name = "User",
   size = 40,
   isOnline = false,
   showBorder = false,
@@ -21,7 +21,7 @@ export const Avatar: React.FC<AvatarProps> = ({
   const { colors } = useThemeStore();
 
   const getInitials = (str: string) => {
-    const parts = str.trim().split(' ');
+    const parts = str.trim().split(" ");
     if (parts.length >= 2) {
       return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
     }
@@ -44,7 +44,7 @@ export const Avatar: React.FC<AvatarProps> = ({
               width: size,
               height: size,
               borderRadius,
-              borderColor: showBorder ? colors.primary : 'transparent',
+              borderColor: showBorder ? colors.primary : "transparent",
               borderWidth: showBorder ? 2 : 0,
             },
           ]}
@@ -61,7 +61,12 @@ export const Avatar: React.FC<AvatarProps> = ({
             },
           ]}
         >
-          <Text style={[styles.initials, { fontSize: size * 0.4, color: '#FFFFFF' }]}>
+          <Text
+            style={[
+              styles.initials,
+              { fontSize: size * 0.4, color: "#FFFFFF" },
+            ]}
+          >
             {getInitials(name)}
           </Text>
         </View>
@@ -87,20 +92,20 @@ export const Avatar: React.FC<AvatarProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    position: 'relative',
+    position: "relative",
   },
   image: {
-    resizeMode: 'cover',
+    resizeMode: "cover",
   },
   fallback: {
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   initials: {
-    fontWeight: '700',
+    fontWeight: "700",
   },
   onlineIndicator: {
-    position: 'absolute',
+    position: "absolute",
     bottom: 0,
     right: 0,
     borderWidth: 2,

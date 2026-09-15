@@ -6,23 +6,24 @@
 ---
 
 ## 📌 Project Overview
+
 **CampusConnect** is a university-centric academic Q&A and collaboration mobile application built with React Native & Expo. Students can ask course-specific questions, share code snippets and images, answer peer questions, earn reputation/badges, connect with top students, and chat in real-time.
 
 ---
 
 ## 🛠 Tech Stack & Core Dependencies
 
-| Category | Technology | Notes |
-| :--- | :--- | :--- |
-| **Framework** | Expo SDK `~54.0.35` | Target SDK (Strictly Expo v54 rules) |
-| **Runtime / Core** | React 19 (`19.1.0`), React Native `0.81.5` | New Architecture ready |
-| **Routing** | Expo Router `~6.0.24` | File-based navigation under `/app` |
-| **Backend & DB** | Supabase (`@supabase/supabase-js` `^2.112.2`) | PostgreSQL, Auth, Realtime, Storage |
-| **Data Fetching** | `@tanstack/react-query` `^5.101.4` | Server state management & caching |
-| **Client State** | `zustand` `^5.0.14` | Auth session, chat presence, theme store |
-| **Forms & Validation** | `react-hook-form` + `zod` (`^4.4.3`) | Typed form validation |
-| **Animations / Gestures** | `react-native-reanimated` `~4.1.1`, `react-native-gesture-handler` | Native animations and interactions |
-| **Icons & Media** | `lucide-react-native`, `expo-image`, `expo-image-manipulator` | Vector icons & optimized image handling |
+| Category                  | Technology                                                         | Notes                                    |
+| :------------------------ | :----------------------------------------------------------------- | :--------------------------------------- |
+| **Framework**             | Expo SDK `~54.0.35`                                                | Target SDK (Strictly Expo v54 rules)     |
+| **Runtime / Core**        | React 19 (`19.1.0`), React Native `0.81.5`                         | New Architecture ready                   |
+| **Routing**               | Expo Router `~6.0.24`                                              | File-based navigation under `/app`       |
+| **Backend & DB**          | Supabase (`@supabase/supabase-js` `^2.112.2`)                      | PostgreSQL, Auth, Realtime, Storage      |
+| **Data Fetching**         | `@tanstack/react-query` `^5.101.4`                                 | Server state management & caching        |
+| **Client State**          | `zustand` `^5.0.14`                                                | Auth session, chat presence, theme store |
+| **Forms & Validation**    | `react-hook-form` + `zod` (`^4.4.3`)                               | Typed form validation                    |
+| **Animations / Gestures** | `react-native-reanimated` `~4.1.1`, `react-native-gesture-handler` | Native animations and interactions       |
+| **Icons & Media**         | `lucide-react-native`, `expo-image`, `expo-image-manipulator`      | Vector icons & optimized image handling  |
 
 ---
 
@@ -74,22 +75,26 @@ campus-connect/
 ## 🚦 Key Systems & Implementation Details
 
 ### 1. Authentication & Route Guarding
+
 - Managed via `src/store/useAuthStore.ts` and `app/_layout.tsx`.
 - Auto-listens to Supabase Auth state (`onAuthStateChange`).
 - Directs unauthenticated users to `(auth)/login`.
 - If a user has not completed onboarding (`university_id` or `major` missing), redirects to `(onboarding)/complete-profile`.
 
 ### 2. Feed & Q&A System
+
 - **Categories & Courses**: Questions can be linked to universities, course codes, and specific categories.
 - **Code Highlighting**: `CodeBlock` component supports syntax display with a language selector modal (`LanguagePicker`).
 - **Image Attachments**: Handled via `expo-image-picker` with compression through `expo-image-manipulator` before Supabase storage upload.
 - **Answers & Voting**: Supports upvoting, downvoting, best answer selection by post author, and threaded nested replies.
 
 ### 3. Top Student & Reputation System
+
 - Calculates student reputation based on questions answered, helpful votes, and best answers (`src/lib/ranking.ts` / `src/lib/topStudent.ts`).
 - Displays special badges (`TopStudentBadge`) on profiles and next to author usernames.
 
 ### 4. Real-time Messaging
+
 - Conversations mapped to either direct user pairing or questions.
 - Messages sync in real-time via Supabase Postgres Changes subscription.
 - Supports text, code snippets, and image attachments.
@@ -99,6 +104,7 @@ campus-connect/
 ## 📋 Feature Status Checklist
 
 ### ✅ Completed
+
 - [x] Base Expo SDK 54 configuration with TypeScript & Expo Router
 - [x] Supabase integration with typed client, storage helper, and auth persistence
 - [x] Auth flow (Login, Signup, Forgot Password)
@@ -115,6 +121,7 @@ campus-connect/
 - [x] Notifications screen with read/unread tracking
 
 ### 🔄 In Progress / Next Up
+
 - [ ] Push notifications setup via Expo Notifications service (`expo-notifications`)
 - [ ] Offline caching and optimistic UI improvements with TanStack React Query
 - [ ] Enhanced search indexing & debounce optimization

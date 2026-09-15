@@ -28,7 +28,10 @@ import { AnswerCard } from "../../../src/components/features/AnswerCard";
 import { PostCard } from "../../../src/components/features/PostCard";
 import { Avatar } from "../../../src/components/ui/Avatar";
 import { TopStudentBadge } from "../../../src/components/ui/TopStudentBadge";
-import { PREDEFINED_BADGES, isBadgeEarned } from "../../../src/constants/badges";
+import {
+  PREDEFINED_BADGES,
+  isBadgeEarned,
+} from "../../../src/constants/badges";
 import { BadgesShowcaseModal } from "../../../src/components/features/BadgesShowcaseModal";
 import { RADIUS, SPACING } from "../../../src/constants/theme";
 import { evaluateTopStudentStatus } from "../../../src/lib/topStudent";
@@ -149,7 +152,12 @@ export default function ProfileScreen() {
                   <Text
                     style={[styles.academicPillText, { color: colors.primary }]}
                   >
-                    {[user?.university?.short_name || user?.university?.name, user?.major].filter(Boolean).join(" · ") || "Student Profile"}
+                    {[
+                      user?.university?.short_name || user?.university?.name,
+                      user?.major,
+                    ]
+                      .filter(Boolean)
+                      .join(" · ") || "Student Profile"}
                   </Text>
                 </View>
                 {user?.year ? (
@@ -357,15 +365,29 @@ export default function ProfileScreen() {
 
         {/* Earned Badges Showcase */}
         <View style={styles.sectionMargin}>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: SPACING.md }}>
-            <Text style={[styles.sectionTitle, { color: colors.text, marginBottom: 0 }]}>
+          <View
+            style={{
+              flexDirection: "row",
+              justifyContent: "space-between",
+              alignItems: "center",
+              marginBottom: SPACING.md,
+            }}
+          >
+            <Text
+              style={[
+                styles.sectionTitle,
+                { color: colors.text, marginBottom: 0 },
+              ]}
+            >
               Academic Badges & Honors
             </Text>
             <TouchableOpacity
               onPress={() => setShowBadgesModal(true)}
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             >
-              <Text style={[styles.seeAllBadgesText, { color: colors.primary }]}>
+              <Text
+                style={[styles.seeAllBadgesText, { color: colors.primary }]}
+              >
                 View All ({PREDEFINED_BADGES.length})
               </Text>
             </TouchableOpacity>
@@ -381,13 +403,13 @@ export default function ProfileScreen() {
               const renderIcon = () => {
                 const iconColor = earned ? badge.color : colors.textMuted;
                 switch (badge.iconName) {
-                  case 'calculator':
+                  case "calculator":
                     return <Calculator size={22} color={iconColor} />;
-                  case 'code':
+                  case "code":
                     return <Code size={22} color={iconColor} />;
-                  case 'heart':
+                  case "heart":
                     return <Heart size={22} color={iconColor} />;
-                  case 'check-circle':
+                  case "check-circle":
                     return <CheckCircle2 size={22} color={iconColor} />;
                   default:
                     return <Award size={22} color={iconColor} />;
@@ -407,11 +429,23 @@ export default function ProfileScreen() {
                     },
                   ]}
                 >
-                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', width: '100%', marginBottom: 6 }}>
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      width: "100%",
+                      marginBottom: 6,
+                    }}
+                  >
                     <View
                       style={[
                         styles.badgeIconCircle,
-                        { backgroundColor: earned ? badge.bgTint : colors.surfaceSecondary },
+                        {
+                          backgroundColor: earned
+                            ? badge.bgTint
+                            : colors.surfaceSecondary,
+                        },
                       ]}
                     >
                       {renderIcon()}
@@ -419,16 +453,20 @@ export default function ProfileScreen() {
                     <View
                       style={[
                         styles.badgeMiniStatus,
-                        { backgroundColor: earned ? 'rgba(16, 185, 129, 0.15)' : colors.surfaceSecondary },
+                        {
+                          backgroundColor: earned
+                            ? "rgba(16, 185, 129, 0.15)"
+                            : colors.surfaceSecondary,
+                        },
                       ]}
                     >
                       <Text
                         style={[
                           styles.badgeMiniStatusText,
-                          { color: earned ? '#10B981' : colors.textMuted },
+                          { color: earned ? "#10B981" : colors.textMuted },
                         ]}
                       >
-                        {earned ? 'Earned' : 'Locked'}
+                        {earned ? "Earned" : "Locked"}
                       </Text>
                     </View>
                   </View>

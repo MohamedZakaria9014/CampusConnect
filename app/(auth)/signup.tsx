@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -7,19 +7,28 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
-import { useForm, Controller } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { Mail, Lock, User, AtSign, ArrowRight, Eye, EyeOff, ArrowLeft } from 'lucide-react-native';
-import { signupSchema, SignupFormData } from '../../src/utils/validators';
-import { useThemeStore } from '../../src/store/useThemeStore';
-import { useAuthStore } from '../../src/store/useAuthStore';
-import { Input } from '../../src/components/ui/Input';
-import { Button } from '../../src/components/ui/Button';
-import { supabase } from '../../src/lib/supabase';
-import { SPACING, RADIUS } from '../../src/constants/theme';
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { useRouter } from "expo-router";
+import { useForm, Controller } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import {
+  Mail,
+  Lock,
+  User,
+  AtSign,
+  ArrowRight,
+  Eye,
+  EyeOff,
+  ArrowLeft,
+} from "lucide-react-native";
+import { signupSchema, SignupFormData } from "../../src/utils/validators";
+import { useThemeStore } from "../../src/store/useThemeStore";
+import { useAuthStore } from "../../src/store/useAuthStore";
+import { Input } from "../../src/components/ui/Input";
+import { Button } from "../../src/components/ui/Button";
+import { supabase } from "../../src/lib/supabase";
+import { SPACING, RADIUS } from "../../src/constants/theme";
 
 export default function SignupScreen() {
   const { colors } = useThemeStore();
@@ -37,11 +46,11 @@ export default function SignupScreen() {
   } = useForm<SignupFormData>({
     resolver: zodResolver(signupSchema),
     defaultValues: {
-      email: '',
-      password: '',
-      confirmPassword: '',
-      fullName: '',
-      username: '',
+      email: "",
+      password: "",
+      confirmPassword: "",
+      fullName: "",
+      username: "",
     },
   });
 
@@ -61,8 +70,10 @@ export default function SignupScreen() {
       });
 
       if (error) {
-        if (error.message.includes('rate limit')) {
-          setErrorMessage('Email rate limit reached for test emails. (Tip: Disable "Confirm email" in Supabase Auth settings for unlimited instant signups during dev).');
+        if (error.message.includes("rate limit")) {
+          setErrorMessage(
+            'Email rate limit reached for test emails. (Tip: Disable "Confirm email" in Supabase Auth settings for unlimited instant signups during dev).',
+          );
         } else {
           setErrorMessage(error.message);
         }
@@ -74,20 +85,23 @@ export default function SignupScreen() {
       }
 
       router.push({
-        pathname: '/(onboarding)/complete-profile',
+        pathname: "/(onboarding)/complete-profile",
         params: { fullName: data.fullName, username: data.username },
       } as any);
     } catch (err: any) {
-      setErrorMessage(err.message || 'Registration failed');
+      setErrorMessage(err.message || "Registration failed");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]} edges={['top', 'bottom']}>
+    <SafeAreaView
+      style={[styles.safeArea, { backgroundColor: colors.background }]}
+      edges={["top", "bottom"]}
+    >
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={{ flex: 1 }}
       >
         <ScrollView
@@ -98,15 +112,22 @@ export default function SignupScreen() {
           {/* Top Header with Back Button */}
           <View style={styles.header}>
             <TouchableOpacity
-              onPress={() => router.canGoBack() ? router.back() : router.replace('/(auth)/login')}
+              onPress={() =>
+                router.canGoBack()
+                  ? router.back()
+                  : router.replace("/(auth)/login")
+              }
               style={styles.backBtn}
             >
               <ArrowLeft size={22} color={colors.text} />
             </TouchableOpacity>
 
-            <Text style={[styles.title, { color: colors.text }]}>Create Student Account</Text>
+            <Text style={[styles.title, { color: colors.text }]}>
+              Create Student Account
+            </Text>
             <Text style={[styles.subtitle, { color: colors.textSecondary }]}>
-              Join thousands of peers asking & solving university challenges together.
+              Join thousands of peers asking & solving university challenges
+              together.
             </Text>
           </View>
 
@@ -117,8 +138,15 @@ export default function SignupScreen() {
             ]}
           >
             {errorMessage && (
-              <View style={[styles.errorBanner, { backgroundColor: colors.error + '15' }]}>
-                <Text style={[styles.errorBannerText, { color: colors.error }]}>{errorMessage}</Text>
+              <View
+                style={[
+                  styles.errorBanner,
+                  { backgroundColor: colors.error + "15" },
+                ]}
+              >
+                <Text style={[styles.errorBannerText, { color: colors.error }]}>
+                  {errorMessage}
+                </Text>
               </View>
             )}
 
@@ -187,7 +215,10 @@ export default function SignupScreen() {
                   error={errors.password?.message}
                   iconPrefix={<Lock size={18} color={colors.icon} />}
                   iconSuffix={
-                    <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={{ padding: 4 }}>
+                    <TouchableOpacity
+                      onPress={() => setShowPassword(!showPassword)}
+                      style={{ padding: 4 }}
+                    >
                       {showPassword ? (
                         <EyeOff size={18} color={colors.icon} />
                       ) : (
@@ -213,7 +244,12 @@ export default function SignupScreen() {
                   error={errors.confirmPassword?.message}
                   iconPrefix={<Lock size={18} color={colors.icon} />}
                   iconSuffix={
-                    <TouchableOpacity onPress={() => setShowConfirmPassword(!showConfirmPassword)} style={{ padding: 4 }}>
+                    <TouchableOpacity
+                      onPress={() =>
+                        setShowConfirmPassword(!showConfirmPassword)
+                      }
+                      style={{ padding: 4 }}
+                    >
                       {showConfirmPassword ? (
                         <EyeOff size={18} color={colors.icon} />
                       ) : (
@@ -236,10 +272,12 @@ export default function SignupScreen() {
 
           <View style={styles.footerRow}>
             <Text style={[styles.footerText, { color: colors.textSecondary }]}>
-              Already have an account?{' '}
+              Already have an account?{" "}
             </Text>
-            <TouchableOpacity onPress={() => router.push('/(auth)/login')}>
-              <Text style={[styles.footerLink, { color: colors.primary }]}>Sign In</Text>
+            <TouchableOpacity onPress={() => router.push("/(auth)/login")}>
+              <Text style={[styles.footerLink, { color: colors.primary }]}>
+                Sign In
+              </Text>
             </TouchableOpacity>
           </View>
         </ScrollView>
@@ -265,12 +303,12 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   title: {
     fontSize: 26,
-    fontWeight: '800',
+    fontWeight: "800",
     letterSpacing: -0.4,
   },
   subtitle: {
@@ -290,14 +328,14 @@ const styles = StyleSheet.create({
   },
   errorBannerText: {
     fontSize: 13,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   submitBtn: {
     marginTop: SPACING.md,
   },
   footerRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
+    flexDirection: "row",
+    justifyContent: "center",
     marginTop: SPACING.xl,
   },
   footerText: {
@@ -305,6 +343,6 @@ const styles = StyleSheet.create({
   },
   footerLink: {
     fontSize: 14,
-    fontWeight: '700',
+    fontWeight: "700",
   },
 });

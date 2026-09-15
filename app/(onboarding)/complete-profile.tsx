@@ -128,7 +128,9 @@ export default function CompleteProfileScreen() {
       if (data && data.length > 0) {
         setMajors(data);
         if (user?.major) {
-          const matchedMajor = data.find((m) => m.name.toLowerCase() === user.major?.toLowerCase());
+          const matchedMajor = data.find(
+            (m) => m.name.toLowerCase() === user.major?.toLowerCase(),
+          );
           if (matchedMajor) {
             setSelectedMajor(matchedMajor);
             setMajorSearchText(matchedMajor.name);
@@ -208,8 +210,12 @@ export default function CompleteProfileScreen() {
     setLoading(true);
     try {
       let publicAvatarUrl = avatarUri;
-      if (avatarUri && avatarUri.startsWith('file://')) {
-        publicAvatarUrl = await uploadImageToSupabase(avatarUri, 'avatars', 'profiles');
+      if (avatarUri && avatarUri.startsWith("file://")) {
+        publicAvatarUrl = await uploadImageToSupabase(
+          avatarUri,
+          "avatars",
+          "profiles",
+        );
       }
 
       await updateProfile({

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -7,18 +7,25 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-} from 'react-native';
-import { useRouter } from 'expo-router';
-import { useForm, Controller } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { Mail, Lock, GraduationCap, ArrowRight, Eye, EyeOff } from 'lucide-react-native';
-import { loginSchema, LoginFormData } from '../../src/utils/validators';
-import { useThemeStore } from '../../src/store/useThemeStore';
-import { useAuthStore } from '../../src/store/useAuthStore';
-import { Input } from '../../src/components/ui/Input';
-import { Button } from '../../src/components/ui/Button';
-import { supabase } from '../../src/lib/supabase';
-import { SPACING, RADIUS } from '../../src/constants/theme';
+} from "react-native";
+import { useRouter } from "expo-router";
+import { useForm, Controller } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import {
+  Mail,
+  Lock,
+  GraduationCap,
+  ArrowRight,
+  Eye,
+  EyeOff,
+} from "lucide-react-native";
+import { loginSchema, LoginFormData } from "../../src/utils/validators";
+import { useThemeStore } from "../../src/store/useThemeStore";
+import { useAuthStore } from "../../src/store/useAuthStore";
+import { Input } from "../../src/components/ui/Input";
+import { Button } from "../../src/components/ui/Button";
+import { supabase } from "../../src/lib/supabase";
+import { SPACING, RADIUS } from "../../src/constants/theme";
 
 export default function LoginScreen() {
   const { colors } = useThemeStore();
@@ -35,8 +42,8 @@ export default function LoginScreen() {
   } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-      email: '',
-      password: '',
+      email: "",
+      password: "",
     },
   });
 
@@ -57,10 +64,10 @@ export default function LoginScreen() {
       if (authData.session) {
         setSession(authData.session);
         await loadUserProfile(authData.user.id);
-        router.replace('/(main)/(tabs)');
+        router.replace("/(main)/(tabs)");
       }
     } catch (err: any) {
-      setErrorMessage(err.message || 'An error occurred during login');
+      setErrorMessage(err.message || "An error occurred during login");
     } finally {
       setLoading(false);
     }
@@ -68,24 +75,31 @@ export default function LoginScreen() {
 
   const handleQuickDemoLogin = async () => {
     setLoading(true);
-    setSession({ user: { id: 'a0000000-0000-0000-0000-000000000001' } } as any);
-    await loadUserProfile('a0000000-0000-0000-0000-000000000001');
-    router.replace('/(main)/(tabs)');
+    setSession({ user: { id: "a0000000-0000-0000-0000-000000000001" } } as any);
+    await loadUserProfile("a0000000-0000-0000-0000-000000000001");
+    router.replace("/(main)/(tabs)");
     setLoading(false);
   };
 
   return (
     <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
       style={[styles.container, { backgroundColor: colors.background }]}
     >
-      <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+      >
         {/* Branding Header */}
         <View style={styles.brandContainer}>
-          <View style={[styles.iconCircle, { backgroundColor: colors.primary }]}>
+          <View
+            style={[styles.iconCircle, { backgroundColor: colors.primary }]}
+          >
             <GraduationCap size={40} color="#FFFFFF" />
           </View>
-          <Text style={[styles.brandTitle, { color: colors.text }]}>Campus Connect</Text>
+          <Text style={[styles.brandTitle, { color: colors.text }]}>
+            Campus Connect
+          </Text>
           <Text style={[styles.brandSubtitle, { color: colors.textSecondary }]}>
             The Academic Social Community for University Students
           </Text>
@@ -98,11 +112,20 @@ export default function LoginScreen() {
             { backgroundColor: colors.surface, borderColor: colors.border },
           ]}
         >
-          <Text style={[styles.formTitle, { color: colors.text }]}>Welcome Back</Text>
+          <Text style={[styles.formTitle, { color: colors.text }]}>
+            Welcome Back
+          </Text>
 
           {errorMessage && (
-            <View style={[styles.errorBanner, { backgroundColor: colors.error + '15' }]}>
-              <Text style={[styles.errorBannerText, { color: colors.error }]}>{errorMessage}</Text>
+            <View
+              style={[
+                styles.errorBanner,
+                { backgroundColor: colors.error + "15" },
+              ]}
+            >
+              <Text style={[styles.errorBannerText, { color: colors.error }]}>
+                {errorMessage}
+              </Text>
             </View>
           )}
 
@@ -138,7 +161,10 @@ export default function LoginScreen() {
                 error={errors.password?.message}
                 iconPrefix={<Lock size={18} color={colors.icon} />}
                 iconSuffix={
-                  <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={{ padding: 4 }}>
+                  <TouchableOpacity
+                    onPress={() => setShowPassword(!showPassword)}
+                    style={{ padding: 4 }}
+                  >
                     {showPassword ? (
                       <EyeOff size={18} color={colors.icon} />
                     ) : (
@@ -152,9 +178,11 @@ export default function LoginScreen() {
 
           <TouchableOpacity
             style={styles.forgotBtn}
-            onPress={() => router.push('/(auth)/forgot-password')}
+            onPress={() => router.push("/(auth)/forgot-password")}
           >
-            <Text style={[styles.forgotText, { color: colors.primary }]}>Forgot Password?</Text>
+            <Text style={[styles.forgotText, { color: colors.primary }]}>
+              Forgot Password?
+            </Text>
           </TouchableOpacity>
 
           <Button
@@ -166,9 +194,15 @@ export default function LoginScreen() {
           />
 
           <View style={styles.dividerRow}>
-            <View style={[styles.divider, { backgroundColor: colors.border }]} />
-            <Text style={[styles.dividerText, { color: colors.textMuted }]}>OR DEMO MODE</Text>
-            <View style={[styles.divider, { backgroundColor: colors.border }]} />
+            <View
+              style={[styles.divider, { backgroundColor: colors.border }]}
+            />
+            <Text style={[styles.dividerText, { color: colors.textMuted }]}>
+              OR DEMO MODE
+            </Text>
+            <View
+              style={[styles.divider, { backgroundColor: colors.border }]}
+            />
           </View>
 
           <Button
@@ -183,8 +217,10 @@ export default function LoginScreen() {
           <Text style={[styles.footerText, { color: colors.textSecondary }]}>
             {"Don't have an account? "}
           </Text>
-          <TouchableOpacity onPress={() => router.push('/(auth)/signup')}>
-            <Text style={[styles.footerLink, { color: colors.primary }]}>Sign Up</Text>
+          <TouchableOpacity onPress={() => router.push("/(auth)/signup")}>
+            <Text style={[styles.footerLink, { color: colors.primary }]}>
+              Sign Up
+            </Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -198,29 +234,29 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: SPACING.xl,
-    justifyContent: 'center',
-    minHeight: '100%',
+    justifyContent: "center",
+    minHeight: "100%",
   },
   brandContainer: {
-    alignItems: 'center',
+    alignItems: "center",
     marginBottom: SPACING.xl,
   },
   iconCircle: {
     width: 72,
     height: 72,
     borderRadius: 36,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     marginBottom: SPACING.md,
   },
   brandTitle: {
     fontSize: 28,
-    fontWeight: '800',
+    fontWeight: "800",
     letterSpacing: -0.5,
   },
   brandSubtitle: {
     fontSize: 14,
-    textAlign: 'center',
+    textAlign: "center",
     marginTop: 4,
   },
   card: {
@@ -230,7 +266,7 @@ const styles = StyleSheet.create({
   },
   formTitle: {
     fontSize: 20,
-    fontWeight: '700',
+    fontWeight: "700",
     marginBottom: SPACING.lg,
   },
   errorBanner: {
@@ -240,22 +276,22 @@ const styles = StyleSheet.create({
   },
   errorBannerText: {
     fontSize: 13,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   forgotBtn: {
-    alignSelf: 'flex-end',
+    alignSelf: "flex-end",
     marginBottom: SPACING.lg,
   },
   forgotText: {
     fontSize: 13,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   submitBtn: {
     marginTop: SPACING.xs,
   },
   dividerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginVertical: SPACING.lg,
   },
   divider: {
@@ -264,12 +300,12 @@ const styles = StyleSheet.create({
   },
   dividerText: {
     fontSize: 11,
-    fontWeight: '700',
+    fontWeight: "700",
     marginHorizontal: SPACING.sm,
   },
   footerRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
+    flexDirection: "row",
+    justifyContent: "center",
     marginTop: SPACING.xl,
   },
   footerText: {
@@ -277,6 +313,6 @@ const styles = StyleSheet.create({
   },
   footerLink: {
     fontSize: 14,
-    fontWeight: '700',
+    fontWeight: "700",
   },
 });

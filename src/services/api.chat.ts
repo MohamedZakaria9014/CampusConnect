@@ -1,12 +1,14 @@
-import { supabase } from '../lib/supabase';
-import { Conversation, Message } from '../types/models';
-import { useChatStore } from '../store/useChatStore';
+import { supabase } from "../lib/supabase";
+import { Conversation, Message } from "../types/models";
+import { useChatStore } from "../store/useChatStore";
 
-export async function fetchConversations(userId: string): Promise<Conversation[]> {
+export async function fetchConversations(
+  userId: string,
+): Promise<Conversation[]> {
   const { data: memberRows, error: memberErr } = await supabase
-    .from('conversation_members')
-    .select('conversation_id, last_read_at')
-    .eq('user_id', userId);
+    .from("conversation_members")
+    .select("conversation_id, last_read_at")
+    .eq("user_id", userId);
 
   if (memberErr || !memberRows || memberRows.length === 0) {
     useChatStore.getState().setUnreadCount(0);
@@ -15,23 +17,25 @@ export async function fetchConversations(userId: string): Promise<Conversation[]
 
   const conversationIds = memberRows.map((m) => m.conversation_id);
   const lastReadMap = new Map<string, string | null>(
-    memberRows.map((m) => [m.conversation_id, m.last_read_at])
+    memberRows.map((m) => [m.conversation_id, m.last_read_at]),
   );
 
   const [convRes, msgRes] = await Promise.all([
     supabase
-      .from('conversations')
-      .select(`
+      .from("conversations")
+      .select(
+        `
         *,
         members:conversation_members(user:profiles(*, university:universities(*)), last_read_at)
-      `)
-      .in('id', conversationIds)
-      .order('updated_at', { ascending: false }),
+      `,
+      )
+      .in("id", conversationIds)
+      .order("updated_at", { ascending: false }),
     supabase
-      .from('messages')
-      .select('*, sender:profiles(*, university:universities(*))')
-      .in('conversation_id', conversationIds)
-      .order('created_at', { ascending: false }),
+      .from("messages")
+      .select("*, sender:profiles(*, university:universities(*))")
+      .in("conversation_id", conversationIds)
+      .order("created_at", { ascending: false }),
   ]);
 
   if (convRes.error || !convRes.data) {
@@ -78,22 +82,22 @@ export async function fetchConversations(userId: string): Promise<Conversation[]
 
 export async function getUnreadMessagesCount(userId: string): Promise<number> {
   const { data: memberRows } = await supabase
-    .from('conversation_members')
-    .select('conversation_id, last_read_at')
-    .eq('user_id', userId);
+    .from("conversation_members")
+    .select("conversation_id, last_read_at")
+    .eq("user_id", userId);
 
   if (!memberRows || memberRows.length === 0) return 0;
 
   let total = 0;
   for (const m of memberRows) {
     let query = supabase
-      .from('messages')
-      .select('id', { count: 'exact', head: true })
-      .eq('conversation_id', m.conversation_id)
-      .neq('sender_id', userId);
+      .from("messages")
+      .select("id", { count: "exact", head: true })
+      .eq("conversation_id", m.conversation_id)
+      .neq("sender_id", userId);
 
     if (m.last_read_at) {
-      query = query.gt('created_at', m.last_read_at);
+      query = query.gt("created_at", m.last_read_at);
     }
 
     const { count } = await query;
@@ -104,10 +108,13 @@ export async function getUnreadMessagesCount(userId: string): Promise<number> {
   return total;
 }
 
-export async function markConversationAsRead(conversationId: string, userId: string): Promise<void> {
+export async function markConversationAsRead(
+  conversationId: string,
+  userId: string,
+): Promise<void> {
   const now = new Date(Date.now() + 1000).toISOString();
   try {
-    await (supabase.rpc as any)('mark_conversation_read', {
+    await (supabase.rpc as any)("mark_conversation_read", {
       p_conversation_id: conversationId,
       p_user_id: userId,
     });
@@ -116,30 +123,32 @@ export async function markConversationAsRead(conversationId: string, userId: str
   }
 
   await supabase
-    .from('conversation_members')
+    .from("conversation_members")
     .update({ last_read_at: now })
     .match({ conversation_id: conversationId, user_id: userId });
 
   // Also auto-mark any pending notification for this conversation as read
   await supabase
-    .from('notifications')
+    .from("notifications")
     .update({ is_read: true })
-    .eq('user_id', userId)
-    .eq('conversation_id', conversationId);
+    .eq("user_id", userId)
+    .eq("conversation_id", conversationId);
 
   // Recalculate unread count asynchronously
   getUnreadMessagesCount(userId).catch(() => {});
 }
 
-export async function fetchMessages(conversationId: string): Promise<Message[]> {
+export async function fetchMessages(
+  conversationId: string,
+): Promise<Message[]> {
   const { data, error } = await supabase
-    .from('messages')
-    .select('*, sender:profiles(*, university:universities(*))')
-    .eq('conversation_id', conversationId)
-    .order('created_at', { ascending: true });
+    .from("messages")
+    .select("*, sender:profiles(*, university:universities(*))")
+    .eq("conversation_id", conversationId)
+    .order("created_at", { ascending: true });
 
   if (error) {
-    console.error('Error fetching messages from Supabase:', error.message);
+    console.error("Error fetching messages from Supabase:", error.message);
     return [];
   }
 
@@ -155,175 +164,212 @@ export async function sendMessage(messageData: {
   code_language?: string;
 }): Promise<Message> {
   const { data, error } = await supabase
-    .from('messages')
+    .from("messages")
     .insert([messageData])
-    .select('*, sender:profiles(*, university:universities(*))')
+    .select("*, sender:profiles(*, university:universities(*))")
     .single();
 
   if (error) {
-    console.error('Error sending message to Supabase:', error.message);
+    console.error("Error sending message to Supabase:", error.message);
     throw error;
   }
 
   // Update conversation updated_at
   await supabase
-    .from('conversations')
+    .from("conversations")
     .update({ updated_at: new Date().toISOString() })
-    .eq('id', messageData.conversation_id);
+    .eq("id", messageData.conversation_id);
 
   // Notify recipient(s) of this direct message
   try {
     const { data: otherMembers } = await supabase
-      .from('conversation_members')
-      .select('user_id')
-      .eq('conversation_id', messageData.conversation_id)
-      .neq('user_id', messageData.sender_id);
+      .from("conversation_members")
+      .select("user_id")
+      .eq("conversation_id", messageData.conversation_id)
+      .neq("user_id", messageData.sender_id);
 
     if (otherMembers && otherMembers.length > 0) {
-      const senderName = data.sender?.full_name || 'A student peer';
+      const senderName = data.sender?.full_name || "A student peer";
       for (const m of otherMembers) {
         try {
-          await (supabase.rpc as any)('send_notification', {
+          await (supabase.rpc as any)("send_notification", {
             p_user_id: m.user_id,
             p_actor_id: messageData.sender_id,
-            p_type: 'new_message',
+            p_type: "new_message",
             p_title: `Message from ${senderName}`,
-            p_body: messageData.content || (messageData.code_snippet ? 'Shared code snippet' : 'Sent an attachment'),
+            p_body:
+              messageData.content ||
+              (messageData.code_snippet
+                ? "Shared code snippet"
+                : "Sent an attachment"),
             p_post_id: null,
             p_conversation_id: messageData.conversation_id,
           });
         } catch {
-          await supabase.from('notifications').insert([{
-            user_id: m.user_id,
-            actor_id: messageData.sender_id,
-            type: 'new_message' as const,
-            conversation_id: messageData.conversation_id,
-            title: `Message from ${senderName}`,
-            body: messageData.content || (messageData.code_snippet ? 'Shared code snippet' : 'Sent an attachment'),
-          }]);
+          await supabase.from("notifications").insert([
+            {
+              user_id: m.user_id,
+              actor_id: messageData.sender_id,
+              type: "new_message" as const,
+              conversation_id: messageData.conversation_id,
+              title: `Message from ${senderName}`,
+              body:
+                messageData.content ||
+                (messageData.code_snippet
+                  ? "Shared code snippet"
+                  : "Sent an attachment"),
+            },
+          ]);
         }
       }
     }
   } catch (notifErr) {
-    console.warn('Could not insert message notification:', notifErr);
+    console.warn("Could not insert message notification:", notifErr);
   }
 
   return {
     ...(data as Message),
-    status: 'delivered',
+    status: "delivered",
   };
 }
 
 export async function findOrCreateDirectConversation(
   currentUserId: string,
   targetUserIdOrConvId: string,
-  postId?: string
+  postId?: string,
 ): Promise<Conversation | null> {
   // 1. Check if targetUserIdOrConvId is already a direct conversation ID
   const { data: directConv } = await supabase
-    .from('conversations')
-    .select('*, members:conversation_members(user:profiles(*, university:universities(*)), last_read_at)')
-    .eq('id', targetUserIdOrConvId)
+    .from("conversations")
+    .select(
+      "*, members:conversation_members(user:profiles(*, university:universities(*)), last_read_at)",
+    )
+    .eq("id", targetUserIdOrConvId)
     .maybeSingle();
 
   if (directConv) {
     return {
       ...directConv,
-      members: ((directConv as any).members || []).map((m: any) => m.user).filter(Boolean),
+      members: ((directConv as any).members || [])
+        .map((m: any) => m.user)
+        .filter(Boolean),
     } as Conversation;
   }
 
   // 2. Try atomic start_direct_conversation RPC
   try {
-    const { data: convId, error: rpcErr } = await (supabase.rpc as any)('start_direct_conversation', {
-      p_user_one: currentUserId,
-      p_user_two: targetUserIdOrConvId,
-      p_post_id: postId || null,
-    });
+    const { data: convId, error: rpcErr } = await (supabase.rpc as any)(
+      "start_direct_conversation",
+      {
+        p_user_one: currentUserId,
+        p_user_two: targetUserIdOrConvId,
+        p_post_id: postId || null,
+      },
+    );
 
     if (!rpcErr && convId) {
       const { data: conversation } = await supabase
-        .from('conversations')
-        .select('*, members:conversation_members(user:profiles(*, university:universities(*)), last_read_at)')
-        .eq('id', convId)
+        .from("conversations")
+        .select(
+          "*, members:conversation_members(user:profiles(*, university:universities(*)), last_read_at)",
+        )
+        .eq("id", convId)
         .single();
 
       if (conversation) {
         return {
           ...conversation,
-          members: ((conversation as any).members || []).map((m: any) => m.user).filter(Boolean),
+          members: ((conversation as any).members || [])
+            .map((m: any) => m.user)
+            .filter(Boolean),
         } as Conversation;
       }
     }
   } catch (err) {
-    console.warn('RPC start_direct_conversation error:', err);
+    console.warn("RPC start_direct_conversation error:", err);
   }
 
   // 3. Fallback: query conversation_members directly for an existing shared conversation
   try {
     const { data: myMemberships } = await supabase
-      .from('conversation_members')
-      .select('conversation_id')
-      .eq('user_id', currentUserId);
+      .from("conversation_members")
+      .select("conversation_id")
+      .eq("user_id", currentUserId);
 
     if (myMemberships && myMemberships.length > 0) {
       const myConvIds = myMemberships.map((m) => m.conversation_id);
       const { data: shared } = await supabase
-        .from('conversation_members')
-        .select('conversation_id')
-        .in('conversation_id', myConvIds)
-        .eq('user_id', targetUserIdOrConvId)
+        .from("conversation_members")
+        .select("conversation_id")
+        .in("conversation_id", myConvIds)
+        .eq("user_id", targetUserIdOrConvId)
         .limit(1)
         .maybeSingle();
 
       if (shared?.conversation_id) {
         const { data: conv } = await supabase
-          .from('conversations')
-          .select('*, members:conversation_members(user:profiles(*, university:universities(*)), last_read_at)')
-          .eq('id', shared.conversation_id)
+          .from("conversations")
+          .select(
+            "*, members:conversation_members(user:profiles(*, university:universities(*)), last_read_at)",
+          )
+          .eq("id", shared.conversation_id)
           .single();
 
         if (conv) {
           return {
             ...conv,
-            members: ((conv as any).members || []).map((m: any) => m.user).filter(Boolean),
+            members: ((conv as any).members || [])
+              .map((m: any) => m.user)
+              .filter(Boolean),
           } as Conversation;
         }
       }
     }
   } catch (fallbackErr) {
-    console.warn('Fallback conversation query failed:', fallbackErr);
+    console.warn("Fallback conversation query failed:", fallbackErr);
   }
 
   return null;
 }
 
-export async function deleteConversation(conversationId: string, userId: string): Promise<void> {
+export async function deleteConversation(
+  conversationId: string,
+  userId: string,
+): Promise<void> {
   if (!conversationId || !userId) return;
 
   // 1. Try atomic RPC delete_conversation
   try {
-    const { error: rpcErr } = await (supabase.rpc as any)('delete_conversation', {
-      p_conversation_id: conversationId,
-      p_user_id: userId,
-    });
+    const { error: rpcErr } = await (supabase.rpc as any)(
+      "delete_conversation",
+      {
+        p_conversation_id: conversationId,
+        p_user_id: userId,
+      },
+    );
     if (!rpcErr) return;
-    console.warn('RPC delete_conversation error, falling back to direct delete:', rpcErr);
+    console.warn(
+      "RPC delete_conversation error, falling back to direct delete:",
+      rpcErr,
+    );
   } catch (err) {
-    console.warn('RPC delete_conversation call failed:', err);
+    console.warn("RPC delete_conversation call failed:", err);
   }
 
   // 2. Direct delete on conversations table
-  const { error } = await supabase.from('conversations').delete().eq('id', conversationId);
+  const { error } = await supabase
+    .from("conversations")
+    .delete()
+    .eq("id", conversationId);
   if (error) {
     // 3. Fallback: if user cannot delete conversation directly due to RLS, delete their membership
     const { error: memErr } = await supabase
-      .from('conversation_members')
+      .from("conversation_members")
       .delete()
-      .eq('conversation_id', conversationId)
-      .eq('user_id', userId);
+      .eq("conversation_id", conversationId)
+      .eq("user_id", userId);
     if (memErr) {
-      console.error('Error deleting conversation:', error.message);
+      console.error("Error deleting conversation:", error.message);
       throw error;
     }
   }

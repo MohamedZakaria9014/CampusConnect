@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -8,7 +8,7 @@ import {
   FlatList,
   TextInput,
   ViewStyle,
-} from 'react-native';
+} from "react-native";
 import {
   ChevronDown,
   X,
@@ -32,9 +32,9 @@ import {
   Cog,
   Boxes,
   Code2,
-} from 'lucide-react-native';
-import { useThemeStore } from '../../store/useThemeStore';
-import { RADIUS, SPACING } from '../../constants/theme';
+} from "lucide-react-native";
+import { useThemeStore } from "../../store/useThemeStore";
+import { RADIUS, SPACING } from "../../constants/theme";
 
 export interface LanguageOption {
   id: string;
@@ -46,157 +46,157 @@ export interface LanguageOption {
 
 export const PROGRAMMING_LANGUAGES: LanguageOption[] = [
   {
-    id: 'javascript',
-    label: 'JavaScript',
-    aliases: ['js', 'jsx', 'node'],
-    color: '#F7DF1E',
+    id: "javascript",
+    label: "JavaScript",
+    aliases: ["js", "jsx", "node"],
+    color: "#F7DF1E",
     icon: FileCode,
   },
   {
-    id: 'typescript',
-    label: 'TypeScript',
-    aliases: ['ts', 'tsx'],
-    color: '#3178C6',
+    id: "typescript",
+    label: "TypeScript",
+    aliases: ["ts", "tsx"],
+    color: "#3178C6",
     icon: Code2,
   },
   {
-    id: 'python',
-    label: 'Python',
-    aliases: ['py', 'python3'],
-    color: '#3776AB',
+    id: "python",
+    label: "Python",
+    aliases: ["py", "python3"],
+    color: "#3776AB",
     icon: Terminal,
   },
   {
-    id: 'cpp',
-    label: 'C++',
-    aliases: ['cpp', 'c++', 'cc', 'cxx'],
-    color: '#00599C',
+    id: "cpp",
+    label: "C++",
+    aliases: ["cpp", "c++", "cc", "cxx"],
+    color: "#00599C",
     icon: Cpu,
   },
   {
-    id: 'c',
-    label: 'C Language',
-    aliases: ['c'],
-    color: '#A8B9CC',
+    id: "c",
+    label: "C Language",
+    aliases: ["c"],
+    color: "#A8B9CC",
     icon: Cpu,
   },
   {
-    id: 'java',
-    label: 'Java',
-    aliases: ['java'],
-    color: '#007396',
+    id: "java",
+    label: "Java",
+    aliases: ["java"],
+    color: "#007396",
     icon: Coffee,
   },
   {
-    id: 'csharp',
-    label: 'C#',
-    aliases: ['cs', 'csharp', 'dotnet'],
-    color: '#239120',
+    id: "csharp",
+    label: "C#",
+    aliases: ["cs", "csharp", "dotnet"],
+    color: "#239120",
     icon: Hash,
   },
   {
-    id: 'html',
-    label: 'HTML',
-    aliases: ['html', 'htm'],
-    color: '#E34F26',
+    id: "html",
+    label: "HTML",
+    aliases: ["html", "htm"],
+    color: "#E34F26",
     icon: Layout,
   },
   {
-    id: 'css',
-    label: 'CSS',
-    aliases: ['css', 'scss', 'sass'],
-    color: '#1572B6',
+    id: "css",
+    label: "CSS",
+    aliases: ["css", "scss", "sass"],
+    color: "#1572B6",
     icon: Palette,
   },
   {
-    id: 'sql',
-    label: 'SQL',
-    aliases: ['sql', 'mysql', 'postgres', 'sqlite'],
-    color: '#4479A1',
+    id: "sql",
+    label: "SQL",
+    aliases: ["sql", "mysql", "postgres", "sqlite"],
+    color: "#4479A1",
     icon: Database,
   },
   {
-    id: 'rust',
-    label: 'Rust',
-    aliases: ['rust', 'rs'],
-    color: '#DEA584',
+    id: "rust",
+    label: "Rust",
+    aliases: ["rust", "rs"],
+    color: "#DEA584",
     icon: Cog,
   },
   {
-    id: 'go',
-    label: 'Go (Golang)',
-    aliases: ['go', 'golang'],
-    color: '#00ADD8',
+    id: "go",
+    label: "Go (Golang)",
+    aliases: ["go", "golang"],
+    color: "#00ADD8",
     icon: Zap,
   },
   {
-    id: 'swift',
-    label: 'Swift',
-    aliases: ['swift', 'ios'],
-    color: '#F05138',
+    id: "swift",
+    label: "Swift",
+    aliases: ["swift", "ios"],
+    color: "#F05138",
     icon: Flame,
   },
   {
-    id: 'kotlin',
-    label: 'Kotlin',
-    aliases: ['kt', 'kotlin', 'android'],
-    color: '#7F52FF',
+    id: "kotlin",
+    label: "Kotlin",
+    aliases: ["kt", "kotlin", "android"],
+    color: "#7F52FF",
     icon: Smartphone,
   },
   {
-    id: 'php',
-    label: 'PHP',
-    aliases: ['php'],
-    color: '#777BB4',
+    id: "php",
+    label: "PHP",
+    aliases: ["php"],
+    color: "#777BB4",
     icon: Globe,
   },
   {
-    id: 'dart',
-    label: 'Dart / Flutter',
-    aliases: ['dart', 'flutter'],
-    color: '#00B4AB',
+    id: "dart",
+    label: "Dart / Flutter",
+    aliases: ["dart", "flutter"],
+    color: "#00B4AB",
     icon: Boxes,
   },
   {
-    id: 'ruby',
-    label: 'Ruby',
-    aliases: ['rb', 'ruby', 'rails'],
-    color: '#CC342D',
+    id: "ruby",
+    label: "Ruby",
+    aliases: ["rb", "ruby", "rails"],
+    color: "#CC342D",
     icon: Gem,
   },
   {
-    id: 'bash',
-    label: 'Bash / Shell',
-    aliases: ['bash', 'sh', 'shell', 'zsh'],
-    color: '#4EAA25',
+    id: "bash",
+    label: "Bash / Shell",
+    aliases: ["bash", "sh", "shell", "zsh"],
+    color: "#4EAA25",
     icon: Terminal,
   },
   {
-    id: 'json',
-    label: 'JSON',
-    aliases: ['json'],
-    color: '#EAB308',
+    id: "json",
+    label: "JSON",
+    aliases: ["json"],
+    color: "#EAB308",
     icon: Braces,
   },
   {
-    id: 'yaml',
-    label: 'YAML',
-    aliases: ['yaml', 'yml'],
-    color: '#CB171E',
+    id: "yaml",
+    label: "YAML",
+    aliases: ["yaml", "yml"],
+    color: "#CB171E",
     icon: FileText,
   },
   {
-    id: 'markdown',
-    label: 'Markdown',
-    aliases: ['md', 'markdown'],
-    color: '#8B5CF6',
+    id: "markdown",
+    label: "Markdown",
+    aliases: ["md", "markdown"],
+    color: "#8B5CF6",
     icon: FileText,
   },
   {
-    id: 'code',
-    label: 'Plain Code',
-    aliases: ['code', 'text', 'other'],
-    color: '#9CA3AF',
+    id: "code",
+    label: "Plain Code",
+    aliases: ["code", "text", "other"],
+    color: "#9CA3AF",
     icon: Code2,
   },
 ];
@@ -205,14 +205,17 @@ export function getLanguageConfig(langInput?: string): LanguageOption {
   if (!langInput) return PROGRAMMING_LANGUAGES[0];
   const query = langInput.toLowerCase().trim();
   const found = PROGRAMMING_LANGUAGES.find(
-    (l) => l.id === query || l.aliases.includes(query) || l.label.toLowerCase() === query
+    (l) =>
+      l.id === query ||
+      l.aliases.includes(query) ||
+      l.label.toLowerCase() === query,
   );
   return (
     found || {
       id: query,
       label: query.toUpperCase(),
       aliases: [query],
-      color: '#6366F1',
+      color: "#6366F1",
       icon: Code2,
     }
   );
@@ -233,7 +236,7 @@ export const LanguagePicker: React.FC<LanguagePickerProps> = ({
 }) => {
   const { colors } = useThemeStore();
   const [modalVisible, setModalVisible] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
 
   const currentConfig = getLanguageConfig(selectedLanguage);
   const IconComp = currentConfig.icon;
@@ -251,7 +254,7 @@ export const LanguagePicker: React.FC<LanguagePickerProps> = ({
   const handleSelect = (lang: LanguageOption) => {
     onSelectLanguage(lang.id);
     setModalVisible(false);
-    setSearchQuery('');
+    setSearchQuery("");
   };
 
   return (
@@ -271,7 +274,12 @@ export const LanguagePicker: React.FC<LanguagePickerProps> = ({
         ]}
       >
         <View style={styles.triggerLeft}>
-          <View style={[styles.iconBadge, { backgroundColor: currentConfig.color + '25' }]}>
+          <View
+            style={[
+              styles.iconBadge,
+              { backgroundColor: currentConfig.color + "25" },
+            ]}
+          >
             <IconComp size={compact ? 14 : 16} color={currentConfig.color} />
           </View>
           <Text
@@ -293,21 +301,41 @@ export const LanguagePicker: React.FC<LanguagePickerProps> = ({
         transparent
         onRequestClose={() => setModalVisible(false)}
       >
-        <View style={[styles.modalOverlay, { backgroundColor: colors.overlay }]}>
-          <View style={[styles.modalContent, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+        <View
+          style={[styles.modalOverlay, { backgroundColor: colors.overlay }]}
+        >
+          <View
+            style={[
+              styles.modalContent,
+              { backgroundColor: colors.surface, borderColor: colors.border },
+            ]}
+          >
             {/* Header */}
             <View style={[styles.modalHeader, { borderColor: colors.border }]}>
               <View style={styles.headerTitleRow}>
                 <Code2 size={20} color={colors.primary} />
-                <Text style={[styles.modalTitle, { color: colors.text }]}>Select Language</Text>
+                <Text style={[styles.modalTitle, { color: colors.text }]}>
+                  Select Language
+                </Text>
               </View>
-              <TouchableOpacity onPress={() => setModalVisible(false)} style={styles.closeBtn}>
+              <TouchableOpacity
+                onPress={() => setModalVisible(false)}
+                style={styles.closeBtn}
+              >
                 <X size={20} color={colors.text} />
               </TouchableOpacity>
             </View>
 
             {/* Search Input */}
-            <View style={[styles.searchBox, { backgroundColor: colors.background, borderColor: colors.border }]}>
+            <View
+              style={[
+                styles.searchBox,
+                {
+                  backgroundColor: colors.background,
+                  borderColor: colors.border,
+                },
+              ]}
+            >
               <Search size={16} color={colors.textMuted} />
               <TextInput
                 placeholder="Search language (e.g. python, ts, sql)..."
@@ -318,7 +346,7 @@ export const LanguagePicker: React.FC<LanguagePickerProps> = ({
                 autoCorrect={false}
               />
               {searchQuery ? (
-                <TouchableOpacity onPress={() => setSearchQuery('')}>
+                <TouchableOpacity onPress={() => setSearchQuery("")}>
                   <X size={14} color={colors.textMuted} />
                 </TouchableOpacity>
               ) : null}
@@ -343,25 +371,48 @@ export const LanguagePicker: React.FC<LanguagePickerProps> = ({
                     style={[
                       styles.langItem,
                       {
-                        backgroundColor: isSelected ? colors.primaryLight + '20' : 'transparent',
-                        borderColor: isSelected ? colors.primary : colors.border,
+                        backgroundColor: isSelected
+                          ? colors.primaryLight + "20"
+                          : "transparent",
+                        borderColor: isSelected
+                          ? colors.primary
+                          : colors.border,
                       },
                     ]}
                   >
                     <View style={styles.langItemLeft}>
-                      <View style={[styles.itemIconBadge, { backgroundColor: item.color + '25' }]}>
+                      <View
+                        style={[
+                          styles.itemIconBadge,
+                          { backgroundColor: item.color + "25" },
+                        ]}
+                      >
                         <ItemIcon size={18} color={item.color} />
                       </View>
                       <View>
-                        <Text style={[styles.langItemName, { color: colors.text }]}>{item.label}</Text>
-                        <Text style={[styles.langItemAlias, { color: colors.textMuted }]}>
+                        <Text
+                          style={[styles.langItemName, { color: colors.text }]}
+                        >
+                          {item.label}
+                        </Text>
+                        <Text
+                          style={[
+                            styles.langItemAlias,
+                            { color: colors.textMuted },
+                          ]}
+                        >
                           .{item.aliases[0]}
                         </Text>
                       </View>
                     </View>
 
                     {isSelected && (
-                      <View style={[styles.checkCircle, { backgroundColor: colors.primary }]}>
+                      <View
+                        style={[
+                          styles.checkCircle,
+                          { backgroundColor: colors.primary },
+                        ]}
+                      >
                         <Check size={12} color="#FFFFFF" />
                       </View>
                     )}
@@ -378,67 +429,67 @@ export const LanguagePicker: React.FC<LanguagePickerProps> = ({
 
 const styles = StyleSheet.create({
   triggerBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     borderRadius: RADIUS.md,
     borderWidth: 1,
     gap: 8,
   },
   triggerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 8,
   },
   iconBadge: {
     padding: 4,
     borderRadius: RADIUS.sm,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   triggerLabel: {
-    fontWeight: '600',
+    fontWeight: "600",
   },
   modalOverlay: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     padding: SPACING.lg,
   },
   modalContent: {
-    width: '100%',
-    maxHeight: '80%',
+    width: "100%",
+    maxHeight: "80%",
     borderRadius: RADIUS.lg,
     borderWidth: 1,
-    overflow: 'hidden',
-    shadowColor: '#000',
+    overflow: "hidden",
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.25,
     shadowRadius: 16,
     elevation: 10,
   },
   modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     padding: SPACING.md,
     borderBottomWidth: 1,
   },
   headerTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 8,
   },
   modalTitle: {
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: "700",
   },
   closeBtn: {
     padding: 4,
   },
   searchBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     margin: SPACING.md,
     paddingHorizontal: SPACING.md,
     paddingVertical: SPACING.xs + 2,
@@ -457,38 +508,38 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   langItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     padding: SPACING.sm + 2,
     borderRadius: RADIUS.md,
     borderWidth: 1,
   },
   langItemLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 12,
   },
   itemIconBadge: {
     width: 34,
     height: 34,
     borderRadius: RADIUS.sm,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   langItemName: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   langItemAlias: {
     fontSize: 11,
-    fontWeight: '500',
+    fontWeight: "500",
   },
   checkCircle: {
     width: 20,
     height: 20,
     borderRadius: 10,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
 });

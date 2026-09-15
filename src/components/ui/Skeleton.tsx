@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from 'react';
-import { Animated, StyleSheet, ViewStyle } from 'react-native';
-import { useThemeStore } from '../../store/useThemeStore';
-import { RADIUS } from '../../constants/theme';
+import React, { useEffect, useState } from "react";
+import { Animated, StyleSheet, ViewStyle } from "react-native";
+import { useThemeStore } from "../../store/useThemeStore";
+import { RADIUS } from "../../constants/theme";
 
 export interface SkeletonProps {
   width?: number | string;
@@ -11,7 +11,7 @@ export interface SkeletonProps {
 }
 
 export const Skeleton: React.FC<SkeletonProps> = ({
-  width = '100%',
+  width = "100%",
   height = 20,
   borderRadius = RADIUS.sm,
   style,
@@ -32,7 +32,7 @@ export const Skeleton: React.FC<SkeletonProps> = ({
           duration: 800,
           useNativeDriver: true,
         }),
-      ])
+      ]),
     );
     pulse.start();
     return () => pulse.stop();

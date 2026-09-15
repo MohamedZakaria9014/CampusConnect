@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from "react";
 import {
   View,
   Text,
@@ -11,40 +11,80 @@ import {
   Platform,
   Alert,
   Modal,
-} from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
-import * as ImagePicker from 'expo-image-picker';
-import { Camera, Image as ImageIcon, Code, Eye, X, Send } from 'lucide-react-native';
-import { useThemeStore } from '../../src/store/useThemeStore';
-import { useAuthStore } from '../../src/store/useAuthStore';
-import { CATEGORIES } from '../../src/constants/categories';
-import { createPost } from '../../src/services/api.posts';
-import { compressImage } from '../../src/utils/imageCompressor';
-import { SPACING, RADIUS } from '../../src/constants/theme';
-import { Button } from '../../src/components/ui/Button';
-import { CodeBlock } from '../../src/components/ui/CodeBlock';
-import { LanguagePicker } from '../../src/components/ui/LanguagePicker';
-import { uploadImageToSupabase } from '../../src/services/storage';
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useRouter } from "expo-router";
+import * as ImagePicker from "expo-image-picker";
+import {
+  Camera,
+  Image as ImageIcon,
+  Code,
+  Eye,
+  X,
+  Send,
+  BookOpen,
+  ChevronDown,
+  Search,
+  Check,
+} from "lucide-react-native";
+import { useThemeStore } from "../../src/store/useThemeStore";
+import { useAuthStore } from "../../src/store/useAuthStore";
+import { CATEGORIES } from "../../src/constants/categories";
+import { createPost } from "../../src/services/api.posts";
+import { fetchMajors } from "../../src/services/api.explore";
+import { compressImage } from "../../src/utils/imageCompressor";
+import { SPACING, RADIUS } from "../../src/constants/theme";
+import { Button } from "../../src/components/ui/Button";
+import { CodeBlock } from "../../src/components/ui/CodeBlock";
+import { LanguagePicker } from "../../src/components/ui/LanguagePicker";
+import { uploadImageToSupabase } from "../../src/services/storage";
+import { useQuery } from "@tanstack/react-query";
+import { queryKeys } from "../../src/constants/queryKeys";
 
 export default function AskScreen() {
   const { colors } = useThemeStore();
   const router = useRouter();
   const user = useAuthStore((s) => s.user);
 
-  const [title, setTitle] = useState('');
-  const [content, setContent] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<string>('Programming');
-  const [customCategory, setCustomCategory] = useState('');
-  const [courseCodeInput, setCourseCodeInput] = useState('');
-  const [codeSnippet, setCodeSnippet] = useState('');
-  const [codeLanguage, setCodeLanguage] = useState('cpp');
+  const [title, setTitle] = useState("");
+  const [content, setContent] = useState("");
+  const [selectedCategory, setSelectedCategory] =
+    useState<string>("Programming");
+  const [customCategory, setCustomCategory] = useState("");
+  const [courseCodeInput, setCourseCodeInput] = useState("");
+  const [selectedCourse, setSelectedCourse] = useState<string | null>(null);
+  const [isOtherCourse, setIsOtherCourse] = useState(false);
+  const [coursePickerVisible, setCoursePickerVisible] = useState(false);
+  const [courseSearch, setCourseSearch] = useState("");
+  const [codeSnippet, setCodeSnippet] = useState("");
+  const [codeLanguage, setCodeLanguage] = useState("cpp");
   const [showCodeInput, setShowCodeInput] = useState(false);
   const [imageUris, setImageUris] = useState<string[]>([]);
-  const [tagInput, setTagInput] = useState('');
-  const [tags, setTags] = useState<string[]>(['Homework', 'CS101']);
+  const [tagInput, setTagInput] = useState("");
+  const [tags, setTags] = useState<string[]>(["Homework", "CS101"]);
   const [isPreviewVisible, setIsPreviewVisible] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
+
+  const { data: majors } = useQuery({
+    queryKey: queryKeys.majors.all,
+    queryFn: () => fetchMajors(),
+    staleTime: Infinity,
+  });
+
+  const filteredMajors = useMemo(() => {
+    const q = courseSearch.toLowerCase().trim();
+    if (!q) return majors || [];
+    return (majors || []).filter(
+      (m) =>
+        m.name.toLowerCase().includes(q) ||
+        m.category.toLowerCase().includes(q),
+    );
+  }, [majors, courseSearch]);
+
+  // The final course value sent to the DB
+  const resolvedCourseCode = isOtherCourse
+    ? courseCodeInput.trim() || undefined
+    : selectedCourse || undefined;
 
   const handlePickImage = async (useCamera = false) => {
     try {
@@ -52,7 +92,10 @@ export default function AskScreen() {
       if (useCamera) {
         const perm = await ImagePicker.requestCameraPermissionsAsync();
         if (!perm.granted) {
-          Alert.alert('Permission needed', 'Camera access is required to take photos of equations/notes.');
+          Alert.alert(
+            "Permission needed",
+            "Camera access is required to take photos of equations/notes.",
+          );
           return;
         }
         result = await ImagePicker.launchCameraAsync({
@@ -62,7 +105,10 @@ export default function AskScreen() {
       } else {
         const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
         if (!perm.granted) {
-          Alert.alert('Permission needed', 'Gallery access is required to attach images.');
+          Alert.alert(
+            "Permission needed",
+            "Gallery access is required to attach images.",
+          );
           return;
         }
         result = await ImagePicker.launchImageLibraryAsync({
@@ -76,14 +122,14 @@ export default function AskScreen() {
         setImageUris((prev) => [...prev, compressed.uri]);
       }
     } catch {
-      Alert.alert('Upload Warning', 'Could not select image.');
+      Alert.alert("Upload Warning", "Could not select image.");
     }
   };
 
   const handleAddTag = () => {
     if (tagInput.trim() && !tags.includes(tagInput.trim())) {
       setTags((prev) => [...prev, tagInput.trim()]);
-      setTagInput('');
+      setTagInput("");
     }
   };
 
@@ -93,19 +139,29 @@ export default function AskScreen() {
 
   const handlePublish = async () => {
     if (!title.trim() || title.length < 5) {
-      Alert.alert('Question Title', 'Please enter a descriptive question title (min 5 chars).');
+      Alert.alert(
+        "Question Title",
+        "Please enter a descriptive question title (min 5 chars).",
+      );
       return;
     }
     if (!content.trim() || content.length < 10) {
-      Alert.alert('Question Details', 'Please explain what you are stuck on in detail (min 10 chars).');
+      Alert.alert(
+        "Question Details",
+        "Please explain what you are stuck on in detail (min 10 chars).",
+      );
       return;
     }
 
     if (!user?.id) {
-      Alert.alert('Sign In Required', 'Please sign in or complete your profile to post questions.', [
-        { text: 'Sign In', onPress: () => router.push('/(auth)/login') },
-        { text: 'Cancel', style: 'cancel' },
-      ]);
+      Alert.alert(
+        "Sign In Required",
+        "Please sign in or complete your profile to post questions.",
+        [
+          { text: "Sign In", onPress: () => router.push("/(auth)/login") },
+          { text: "Cancel", style: "cancel" },
+        ],
+      );
       return;
     }
 
@@ -113,15 +169,20 @@ export default function AskScreen() {
     try {
       // Upload attached images to Supabase storage bucket
       const uploadedImageUrls = await Promise.all(
-        imageUris.map((uri) => uploadImageToSupabase(uri, 'posts', 'post_images'))
+        imageUris.map((uri) =>
+          uploadImageToSupabase(uri, "posts", "post_images"),
+        ),
       );
 
-      const finalCategory = selectedCategory === 'Other' ? (customCategory.trim() || 'Other') : selectedCategory;
+      const finalCategory =
+        selectedCategory === "Other"
+          ? customCategory.trim() || "Other"
+          : selectedCategory;
 
       await createPost({
         author_id: user.id,
         university_id: user.university_id,
-        course_code: courseCodeInput.trim() || undefined,
+        course_code: resolvedCourseCode,
         category: finalCategory,
         title,
         content,
@@ -133,42 +194,68 @@ export default function AskScreen() {
       });
 
       setIsPublishing(false);
-      Alert.alert('Success 🎉', 'Your academic question has been published to the community!', [
-        { text: 'OK', onPress: () => router.replace('/(main)/(tabs)') },
-      ]);
+      Alert.alert(
+        "Success 🎉",
+        "Your academic question has been published to the community!",
+        [{ text: "OK", onPress: () => router.replace("/(main)/(tabs)") }],
+      );
     } catch {
       setIsPublishing(false);
-      Alert.alert('Error', 'Failed to publish question. Please try again.');
+      Alert.alert("Error", "Failed to publish question. Please try again.");
     }
   };
 
   const insets = useSafeAreaInsets();
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background, paddingTop: insets.top }]}>
+    <View
+      style={[
+        styles.container,
+        { backgroundColor: colors.background, paddingTop: insets.top },
+      ]}
+    >
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={{ flex: 1 }}
       >
         {/* Top Navigation Header */}
         <View style={[styles.topHeader, { borderColor: colors.border }]}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.closeBtn}>
+          <TouchableOpacity
+            onPress={() => router.back()}
+            style={styles.closeBtn}
+          >
             <X size={24} color={colors.text} />
           </TouchableOpacity>
 
-          <Text style={[styles.headerTitle, { color: colors.text }]}>Ask Question</Text>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>
+            Ask Question
+          </Text>
 
-          <TouchableOpacity onPress={() => setIsPreviewVisible(true)} style={styles.previewHeaderBtn}>
+          <TouchableOpacity
+            onPress={() => setIsPreviewVisible(true)}
+            style={styles.previewHeaderBtn}
+          >
             <Eye size={18} color={colors.primary} />
-            <Text style={[styles.previewText, { color: colors.primary }]}>Preview</Text>
+            <Text style={[styles.previewText, { color: colors.primary }]}>
+              Preview
+            </Text>
           </TouchableOpacity>
         </View>
 
-        <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+        >
           {/* Categories Selector */}
-          <Text style={[styles.sectionLabel, { color: colors.text }]}>Subject Area</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryScroll}>
-            {CATEGORIES.filter((c) => c.id !== 'All').map((cat) => {
+          <Text style={[styles.sectionLabel, { color: colors.text }]}>
+            Subject Area
+          </Text>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.categoryScroll}
+          >
+            {CATEGORIES.filter((c) => c.id !== "All").map((cat) => {
               const isSelected = selectedCategory === cat.id;
               return (
                 <TouchableOpacity
@@ -177,11 +264,18 @@ export default function AskScreen() {
                   style={[
                     styles.catChip,
                     {
-                      backgroundColor: isSelected ? colors.primary : colors.surfaceSecondary,
+                      backgroundColor: isSelected
+                        ? colors.primary
+                        : colors.surfaceSecondary,
                     },
                   ]}
                 >
-                  <Text style={[styles.catChipText, { color: isSelected ? '#FFFFFF' : colors.text }]}>
+                  <Text
+                    style={[
+                      styles.catChipText,
+                      { color: isSelected ? "#FFFFFF" : colors.text },
+                    ]}
+                  >
                     {cat.label}
                   </Text>
                 </TouchableOpacity>
@@ -190,13 +284,20 @@ export default function AskScreen() {
           </ScrollView>
 
           {/* Custom Subject Area Text Box if "Other" is selected */}
-          {selectedCategory === 'Other' && (
+          {selectedCategory === "Other" && (
             <TextInput
               placeholder="Enter your custom subject area (e.g. Neuroscience, Ethics)..."
               placeholderTextColor={colors.textMuted}
               value={customCategory}
               onChangeText={setCustomCategory}
-              style={[styles.customCatInput, { color: colors.text, backgroundColor: colors.surfaceSecondary, borderColor: colors.border }]}
+              style={[
+                styles.customCatInput,
+                {
+                  color: colors.text,
+                  backgroundColor: colors.surfaceSecondary,
+                  borderColor: colors.border,
+                },
+              ]}
             />
           )}
 
@@ -206,7 +307,10 @@ export default function AskScreen() {
             placeholderTextColor={colors.textMuted}
             value={title}
             onChangeText={setTitle}
-            style={[styles.titleInput, { color: colors.text, borderColor: colors.border }]}
+            style={[
+              styles.titleInput,
+              { color: colors.text, borderColor: colors.border },
+            ]}
           />
 
           {/* Detailed Question Body */}
@@ -218,7 +322,11 @@ export default function AskScreen() {
             multiline
             style={[
               styles.contentInput,
-              { color: colors.text, backgroundColor: colors.surface, borderColor: colors.border },
+              {
+                color: colors.text,
+                backgroundColor: colors.surface,
+                borderColor: colors.border,
+              },
             ]}
           />
 
@@ -226,27 +334,40 @@ export default function AskScreen() {
           <View style={styles.attachmentBar}>
             <TouchableOpacity
               onPress={() => handlePickImage(false)}
-              style={[styles.attachBtn, { backgroundColor: colors.surfaceSecondary }]}
+              style={[
+                styles.attachBtn,
+                { backgroundColor: colors.surfaceSecondary },
+              ]}
             >
               <ImageIcon size={18} color={colors.primary} />
-              <Text style={[styles.attachText, { color: colors.text }]}>Photo</Text>
+              <Text style={[styles.attachText, { color: colors.text }]}>
+                Photo
+              </Text>
             </TouchableOpacity>
 
             <TouchableOpacity
               onPress={() => handlePickImage(true)}
-              style={[styles.attachBtn, { backgroundColor: colors.surfaceSecondary }]}
+              style={[
+                styles.attachBtn,
+                { backgroundColor: colors.surfaceSecondary },
+              ]}
             >
               <Camera size={18} color={colors.secondary} />
-              <Text style={[styles.attachText, { color: colors.text }]}>Camera</Text>
+              <Text style={[styles.attachText, { color: colors.text }]}>
+                Camera
+              </Text>
             </TouchableOpacity>
 
             <TouchableOpacity
               onPress={() => setShowCodeInput(!showCodeInput)}
-              style={[styles.attachBtn, { backgroundColor: colors.surfaceSecondary }]}
+              style={[
+                styles.attachBtn,
+                { backgroundColor: colors.surfaceSecondary },
+              ]}
             >
               <Code size={18} color={colors.accent} />
               <Text style={[styles.attachText, { color: colors.text }]}>
-                {showCodeInput ? 'Hide Code' : 'Add Code'}
+                {showCodeInput ? "Hide Code" : "Add Code"}
               </Text>
             </TouchableOpacity>
           </View>
@@ -258,7 +379,9 @@ export default function AskScreen() {
                 <View key={idx} style={styles.imageContainer}>
                   <Image source={{ uri }} style={styles.previewImage} />
                   <TouchableOpacity
-                    onPress={() => setImageUris((prev) => prev.filter((_, i) => i !== idx))}
+                    onPress={() =>
+                      setImageUris((prev) => prev.filter((_, i) => i !== idx))
+                    }
                     style={styles.removeImgBtn}
                   >
                     <X size={14} color="#FFFFFF" />
@@ -270,9 +393,16 @@ export default function AskScreen() {
 
           {/* Code Input Section */}
           {showCodeInput && (
-            <View style={[styles.codeSection, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            <View
+              style={[
+                styles.codeSection,
+                { backgroundColor: colors.surface, borderColor: colors.border },
+              ]}
+            >
               <View style={styles.codeHeader}>
-                <Text style={[styles.codeTitle, { color: colors.text }]}>Code Snippet</Text>
+                <Text style={[styles.codeTitle, { color: colors.text }]}>
+                  Code Snippet
+                </Text>
                 <LanguagePicker
                   selectedLanguage={codeLanguage}
                   onSelectLanguage={setCodeLanguage}
@@ -285,26 +415,276 @@ export default function AskScreen() {
                 value={codeSnippet}
                 onChangeText={setCodeSnippet}
                 multiline
-                style={[styles.codeSnippetInput, { color: colors.codeText, backgroundColor: colors.codeBg }]}
+                style={[
+                  styles.codeSnippetInput,
+                  { color: colors.codeText, backgroundColor: colors.codeBg },
+                ]}
               />
             </View>
           )}
 
-          {/* Writeable Course Code Field */}
+          {/* Link Course — Smart Picker */}
           <View style={styles.sectionMargin}>
-            <Text style={[styles.sectionLabel, { color: colors.text }]}>Link Course (Optional)</Text>
-            <TextInput
-              placeholder="Enter course code or name (e.g. CS101, MATH201, Anatomy 1)..."
-              placeholderTextColor={colors.textMuted}
-              value={courseCodeInput}
-              onChangeText={setCourseCodeInput}
-              style={[styles.courseInput, { color: colors.text, backgroundColor: colors.surfaceSecondary, borderColor: colors.border }]}
-            />
+            <Text style={[styles.sectionLabel, { color: colors.text }]}>
+              Link Course (Optional)
+            </Text>
+
+            {/* Trigger button — shows selected course or placeholder */}
+            <TouchableOpacity
+              onPress={() => {
+                setCourseSearch("");
+                setCoursePickerVisible(true);
+              }}
+              style={[
+                styles.coursePickerBtn,
+                {
+                  backgroundColor: colors.surfaceSecondary,
+                  borderColor:
+                    selectedCourse || isOtherCourse
+                      ? colors.primary
+                      : colors.border,
+                  borderWidth: selectedCourse || isOtherCourse ? 1.5 : 1,
+                },
+              ]}
+            >
+              <BookOpen
+                size={16}
+                color={
+                  selectedCourse || isOtherCourse
+                    ? colors.primary
+                    : colors.textMuted
+                }
+              />
+              <Text
+                style={[
+                  styles.coursePickerText,
+                  {
+                    color:
+                      selectedCourse || isOtherCourse
+                        ? colors.text
+                        : colors.textMuted,
+                    flex: 1,
+                  },
+                ]}
+                numberOfLines={1}
+              >
+                {isOtherCourse
+                  ? courseCodeInput || "Other — type your course"
+                  : selectedCourse || "Select a course..."}
+              </Text>
+              {selectedCourse || isOtherCourse ? (
+                <TouchableOpacity
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  onPress={() => {
+                    setSelectedCourse(null);
+                    setIsOtherCourse(false);
+                    setCourseCodeInput("");
+                  }}
+                >
+                  <X size={16} color={colors.textSecondary} />
+                </TouchableOpacity>
+              ) : (
+                <ChevronDown size={16} color={colors.textMuted} />
+              )}
+            </TouchableOpacity>
+
+            {/* Free-text input shown when "Other" is selected */}
+            {isOtherCourse && (
+              <TextInput
+                placeholder="Type course code or name (e.g. MATH201, Anatomy 1)..."
+                placeholderTextColor={colors.textMuted}
+                value={courseCodeInput}
+                onChangeText={setCourseCodeInput}
+                autoFocus
+                style={[
+                  styles.courseInput,
+                  {
+                    color: colors.text,
+                    backgroundColor: colors.surfaceSecondary,
+                    borderColor: colors.primary,
+                    borderWidth: 1.5,
+                    marginTop: 8,
+                  },
+                ]}
+              />
+            )}
           </View>
+
+          {/* Course Picker Modal */}
+          <Modal
+            visible={coursePickerVisible}
+            animationType="slide"
+            transparent
+            onRequestClose={() => setCoursePickerVisible(false)}
+          >
+            <TouchableOpacity
+              style={styles.modalOverlay}
+              activeOpacity={1}
+              onPress={() => setCoursePickerVisible(false)}
+            />
+            <View
+              style={[
+                styles.coursePickerSheet,
+                { backgroundColor: colors.card, borderColor: colors.border },
+              ]}
+            >
+              {/* Sheet header */}
+              <View
+                style={[styles.sheetHeader, { borderColor: colors.border }]}
+              >
+                <Text style={[styles.sheetTitle, { color: colors.text }]}>
+                  Choose a Course
+                </Text>
+                <TouchableOpacity
+                  onPress={() => setCoursePickerVisible(false)}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                >
+                  <X size={20} color={colors.textSecondary} />
+                </TouchableOpacity>
+              </View>
+
+              {/* Search box */}
+              <View
+                style={[
+                  styles.sheetSearchBox,
+                  {
+                    backgroundColor: colors.surfaceSecondary,
+                    borderColor: colors.border,
+                  },
+                ]}
+              >
+                <Search size={15} color={colors.textSecondary} />
+                <TextInput
+                  placeholder="Search courses..."
+                  placeholderTextColor={colors.textMuted}
+                  value={courseSearch}
+                  onChangeText={setCourseSearch}
+                  style={[
+                    styles.sheetSearchInput,
+                    { color: colors.text },
+                  ]}
+                  autoFocus
+                />
+                {courseSearch.length > 0 && (
+                  <TouchableOpacity onPress={() => setCourseSearch("")}>
+                    <X size={14} color={colors.textMuted} />
+                  </TouchableOpacity>
+                )}
+              </View>
+
+              {/* Course list */}
+              <ScrollView
+                style={styles.sheetList}
+                keyboardShouldPersistTaps="handled"
+                showsVerticalScrollIndicator={false}
+              >
+                {filteredMajors.map((major) => {
+                  const isSelected = selectedCourse === major.name;
+                  return (
+                    <TouchableOpacity
+                      key={major.name}
+                      onPress={() => {
+                        setSelectedCourse(major.name);
+                        setIsOtherCourse(false);
+                        setCourseCodeInput("");
+                        setCoursePickerVisible(false);
+                      }}
+                      style={[
+                        styles.sheetItem,
+                        {
+                          backgroundColor: isSelected
+                            ? colors.primaryLight + "18"
+                            : "transparent",
+                          borderColor: isSelected
+                            ? colors.primary + "60"
+                            : "transparent",
+                        },
+                      ]}
+                    >
+                      <View style={styles.sheetItemLeft}>
+                        <Text
+                          style={[
+                            styles.sheetItemName,
+                            {
+                              color: isSelected
+                                ? colors.primary
+                                : colors.text,
+                            },
+                          ]}
+                        >
+                          {major.name}
+                        </Text>
+                        <Text
+                          style={[
+                            styles.sheetItemCategory,
+                            { color: colors.textSecondary },
+                          ]}
+                        >
+                          {major.category}
+                        </Text>
+                      </View>
+                      {isSelected && (
+                        <Check size={16} color={colors.primary} />
+                      )}
+                    </TouchableOpacity>
+                  );
+                })}
+
+                {/* "Other" option at bottom */}
+                <TouchableOpacity
+                  onPress={() => {
+                    setIsOtherCourse(true);
+                    setSelectedCourse(null);
+                    setCoursePickerVisible(false);
+                  }}
+                  style={[
+                    styles.sheetItem,
+                    styles.sheetItemOther,
+                    {
+                      backgroundColor: isOtherCourse
+                        ? colors.accent + "15"
+                        : colors.surfaceSecondary,
+                      borderColor: isOtherCourse
+                        ? colors.accent
+                        : colors.border,
+                    },
+                  ]}
+                >
+                  <View style={styles.sheetItemLeft}>
+                    <Text
+                      style={[
+                        styles.sheetItemName,
+                        {
+                          color: isOtherCourse ? colors.accent : colors.text,
+                        },
+                      ]}
+                    >
+                      Other
+                    </Text>
+                    <Text
+                      style={[
+                        styles.sheetItemCategory,
+                        { color: colors.textSecondary },
+                      ]}
+                    >
+                      Not listed? Type your own course
+                    </Text>
+                  </View>
+                  {isOtherCourse && (
+                    <Check size={16} color={colors.accent} />
+                  )}
+                </TouchableOpacity>
+
+                <View style={{ height: 24 }} />
+              </ScrollView>
+            </View>
+          </Modal>
 
           {/* Tags */}
           <View style={styles.sectionMargin}>
-            <Text style={[styles.sectionLabel, { color: colors.text }]}>Tags</Text>
+            <Text style={[styles.sectionLabel, { color: colors.text }]}>
+              Tags
+            </Text>
             <View style={styles.tagInputRow}>
               <TextInput
                 placeholder="Add tag (e.g. Calculus)..."
@@ -312,17 +692,36 @@ export default function AskScreen() {
                 value={tagInput}
                 onChangeText={setTagInput}
                 onSubmitEditing={handleAddTag}
-                style={[styles.tagInput, { color: colors.text, backgroundColor: colors.surfaceSecondary }]}
+                style={[
+                  styles.tagInput,
+                  {
+                    color: colors.text,
+                    backgroundColor: colors.surfaceSecondary,
+                  },
+                ]}
               />
-              <TouchableOpacity onPress={handleAddTag} style={[styles.addTagBtn, { backgroundColor: colors.primary }]}>
+              <TouchableOpacity
+                onPress={handleAddTag}
+                style={[styles.addTagBtn, { backgroundColor: colors.primary }]}
+              >
                 <Text style={styles.addTagText}>Add</Text>
               </TouchableOpacity>
             </View>
 
             <View style={styles.tagsContainer}>
               {tags.map((t) => (
-                <View key={t} style={[styles.tagBadge, { backgroundColor: colors.primaryLight + '20' }]}>
-                  <Text style={[styles.tagBadgeText, { color: colors.primary }]}>#{t}</Text>
+                <View
+                  key={t}
+                  style={[
+                    styles.tagBadge,
+                    { backgroundColor: colors.primaryLight + "20" },
+                  ]}
+                >
+                  <Text
+                    style={[styles.tagBadgeText, { color: colors.primary }]}
+                  >
+                    #{t}
+                  </Text>
                   <TouchableOpacity onPress={() => handleRemoveTag(t)}>
                     <X size={12} color={colors.primary} />
                   </TouchableOpacity>
@@ -342,23 +741,59 @@ export default function AskScreen() {
         </ScrollView>
 
         {/* Question Live Preview Modal */}
-        <Modal visible={isPreviewVisible} animationType="slide" onRequestClose={() => setIsPreviewVisible(false)}>
-          <View style={[styles.fullScreenModal, { backgroundColor: colors.background, paddingTop: insets.top }]}>
+        <Modal
+          visible={isPreviewVisible}
+          animationType="slide"
+          onRequestClose={() => setIsPreviewVisible(false)}
+        >
+          <View
+            style={[
+              styles.fullScreenModal,
+              { backgroundColor: colors.background, paddingTop: insets.top },
+            ]}
+          >
             <View style={[styles.modalHeader, { borderColor: colors.border }]}>
-              <Text style={[styles.modalTitle, { color: colors.text }]}>Question Live Preview</Text>
-              <TouchableOpacity onPress={() => setIsPreviewVisible(false)} style={styles.closeBtn}>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>
+                Question Live Preview
+              </Text>
+              <TouchableOpacity
+                onPress={() => setIsPreviewVisible(false)}
+                style={styles.closeBtn}
+              >
                 <X size={24} color={colors.text} />
               </TouchableOpacity>
             </View>
 
-            <ScrollView contentContainerStyle={styles.previewScrollContent} showsVerticalScrollIndicator={true}>
-              <View style={[styles.categoryPill, { backgroundColor: colors.primaryLight + '20' }]}>
-                <Text style={[styles.previewCategory, { color: colors.primary }]}>{selectedCategory.toUpperCase()}</Text>
+            <ScrollView
+              contentContainerStyle={styles.previewScrollContent}
+              showsVerticalScrollIndicator={true}
+            >
+              <View
+                style={[
+                  styles.categoryPill,
+                  { backgroundColor: colors.primaryLight + "20" },
+                ]}
+              >
+                <Text
+                  style={[styles.previewCategory, { color: colors.primary }]}
+                >
+                  {selectedCategory.toUpperCase()}
+                </Text>
               </View>
 
-              <Text style={[styles.previewQuestionTitle, { color: colors.text }]}>{title || 'Your Question Title'}</Text>
-              <Text style={[styles.previewContentText, { color: colors.textSecondary }]}>
-                {content || 'Your detailed question explanation will appear here.'}
+              <Text
+                style={[styles.previewQuestionTitle, { color: colors.text }]}
+              >
+                {title || "Your Question Title"}
+              </Text>
+              <Text
+                style={[
+                  styles.previewContentText,
+                  { color: colors.textSecondary },
+                ]}
+              >
+                {content ||
+                  "Your detailed question explanation will appear here."}
               </Text>
 
               {codeSnippet ? (
@@ -368,7 +803,15 @@ export default function AskScreen() {
               ) : null}
 
               {imageUris.length > 0 && (
-                <Image source={{ uri: imageUris[0] }} style={{ width: '100%', height: 220, borderRadius: 12, marginVertical: 12 }} />
+                <Image
+                  source={{ uri: imageUris[0] }}
+                  style={{
+                    width: "100%",
+                    height: 220,
+                    borderRadius: 12,
+                    marginVertical: 12,
+                  }}
+                />
               )}
             </ScrollView>
           </View>
@@ -383,9 +826,9 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   topHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingHorizontal: SPACING.lg,
     paddingVertical: SPACING.md,
     borderBottomWidth: 1,
@@ -395,27 +838,27 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 18,
-    fontWeight: '800',
+    fontWeight: "800",
   },
   previewHeaderBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 4,
   },
   previewText: {
     fontSize: 14,
-    fontWeight: '700',
+    fontWeight: "700",
   },
   scrollContent: {
     padding: SPACING.lg,
   },
   sectionLabel: {
     fontSize: 14,
-    fontWeight: '700',
+    fontWeight: "700",
     marginBottom: SPACING.xs,
   },
   categoryScroll: {
-    flexDirection: 'row',
+    flexDirection: "row",
     marginBottom: SPACING.md,
   },
   catChip: {
@@ -426,7 +869,7 @@ const styles = StyleSheet.create({
   },
   catChipText: {
     fontSize: 13,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   customCatInput: {
     fontSize: 14,
@@ -436,6 +879,18 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     marginBottom: SPACING.md,
   },
+  coursePickerBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: SPACING.md,
+    paddingVertical: 11,
+    borderRadius: RADIUS.md,
+    borderWidth: 1,
+    gap: 8,
+  },
+  coursePickerText: {
+    fontSize: 14,
+  },
   courseInput: {
     fontSize: 14,
     paddingHorizontal: SPACING.md,
@@ -443,9 +898,76 @@ const styles = StyleSheet.create({
     borderRadius: RADIUS.md,
     borderWidth: 1,
   },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.45)",
+  },
+  coursePickerSheet: {
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    borderWidth: 1,
+    maxHeight: "72%",
+    paddingBottom: 0,
+  },
+  sheetHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: SPACING.lg,
+    paddingTop: SPACING.lg,
+    paddingBottom: SPACING.md,
+    borderBottomWidth: 1,
+  },
+  sheetTitle: {
+    fontSize: 17,
+    fontWeight: "800",
+  },
+  sheetSearchBox: {
+    flexDirection: "row",
+    alignItems: "center",
+    margin: SPACING.md,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: 8,
+    borderRadius: RADIUS.md,
+    borderWidth: 1,
+    gap: 8,
+  },
+  sheetSearchInput: {
+    flex: 1,
+    fontSize: 14,
+    paddingVertical: 0,
+  },
+  sheetList: {
+    paddingHorizontal: SPACING.md,
+  },
+  sheetItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: SPACING.md,
+    paddingVertical: 12,
+    borderRadius: RADIUS.md,
+    borderWidth: 1,
+    marginBottom: 6,
+  },
+  sheetItemOther: {
+    marginTop: 8,
+  },
+  sheetItemLeft: {
+    flex: 1,
+    marginRight: 8,
+  },
+  sheetItemName: {
+    fontSize: 14,
+    fontWeight: "700",
+  },
+  sheetItemCategory: {
+    fontSize: 12,
+    marginTop: 2,
+  },
   titleInput: {
     fontSize: 20,
-    fontWeight: '700',
+    fontWeight: "700",
     paddingVertical: 12,
     borderBottomWidth: 1,
     marginBottom: SPACING.md,
@@ -457,17 +979,17 @@ const styles = StyleSheet.create({
     padding: SPACING.md,
     borderRadius: RADIUS.lg,
     borderWidth: 1,
-    textAlignVertical: 'top',
+    textAlignVertical: "top",
     marginBottom: SPACING.md,
   },
   attachmentBar: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 8,
     marginBottom: SPACING.md,
   },
   attachBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: RADIUS.md,
@@ -475,14 +997,14 @@ const styles = StyleSheet.create({
   },
   attachText: {
     fontSize: 13,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   imageScroll: {
-    flexDirection: 'row',
+    flexDirection: "row",
     marginBottom: SPACING.md,
   },
   imageContainer: {
-    position: 'relative',
+    position: "relative",
     marginRight: 8,
   },
   previewImage: {
@@ -491,15 +1013,15 @@ const styles = StyleSheet.create({
     borderRadius: RADIUS.md,
   },
   removeImgBtn: {
-    position: 'absolute',
+    position: "absolute",
     top: 4,
     right: 4,
-    backgroundColor: 'rgba(0,0,0,0.6)',
+    backgroundColor: "rgba(0,0,0,0.6)",
     width: 20,
     height: 20,
     borderRadius: 10,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   codeSection: {
     padding: SPACING.md,
@@ -508,22 +1030,22 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.md,
   },
   codeHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: 8,
   },
   codeTitle: {
     fontSize: 14,
-    fontWeight: '700',
+    fontWeight: "700",
   },
   langInput: {
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: "700",
   },
   codeSnippetInput: {
     fontSize: 13,
-    fontFamily: Platform.OS === 'ios' ? 'Courier New' : 'monospace',
+    fontFamily: Platform.OS === "ios" ? "Courier New" : "monospace",
     padding: SPACING.sm,
     borderRadius: RADIUS.md,
     minHeight: 80,
@@ -539,10 +1061,10 @@ const styles = StyleSheet.create({
   },
   courseChipText: {
     fontSize: 13,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   tagInputRow: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 8,
     marginBottom: 8,
   },
@@ -555,22 +1077,22 @@ const styles = StyleSheet.create({
   },
   addTagBtn: {
     paddingHorizontal: SPACING.md,
-    justifyContent: 'center',
+    justifyContent: "center",
     borderRadius: RADIUS.md,
   },
   addTagText: {
-    color: '#FFFFFF',
-    fontWeight: '700',
+    color: "#FFFFFF",
+    fontWeight: "700",
     fontSize: 13,
   },
   tagsContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: "row",
+    flexWrap: "wrap",
     gap: 6,
   },
   tagBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: RADIUS.full,
@@ -578,7 +1100,7 @@ const styles = StyleSheet.create({
   },
   tagBadgeText: {
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   publishBtn: {
     marginTop: SPACING.md,
@@ -592,19 +1114,19 @@ const styles = StyleSheet.create({
     paddingBottom: 60,
   },
   modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     paddingHorizontal: SPACING.lg,
     paddingVertical: SPACING.md,
     borderBottomWidth: 1,
   },
   modalTitle: {
     fontSize: 18,
-    fontWeight: '800',
+    fontWeight: "800",
   },
   categoryPill: {
-    alignSelf: 'flex-start',
+    alignSelf: "flex-start",
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: RADIUS.sm,
@@ -612,12 +1134,12 @@ const styles = StyleSheet.create({
   },
   previewCategory: {
     fontSize: 11,
-    fontWeight: '800',
+    fontWeight: "800",
     letterSpacing: 1,
   },
   previewQuestionTitle: {
     fontSize: 20,
-    fontWeight: '800',
+    fontWeight: "800",
     marginBottom: 8,
   },
   previewContentText: {

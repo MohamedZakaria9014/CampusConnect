@@ -1,7 +1,7 @@
-import { create } from 'zustand';
-import { COLORS } from '../constants/theme';
+import { create } from "zustand";
+import { COLORS } from "../constants/theme";
 
-type ThemeMode = 'light' | 'dark';
+type ThemeMode = "light" | "dark";
 
 interface ThemeState {
   mode: ThemeMode;
@@ -11,10 +11,10 @@ interface ThemeState {
 }
 
 export const useThemeStore = create<ThemeState>((set, get) => ({
-  mode: 'dark', // Sleek dark mode default for premium startup look
+  mode: "dark", // Sleek dark mode default for premium startup look
   colors: COLORS.dark,
   toggleTheme: () => {
-    const nextMode = get().mode === 'dark' ? 'light' : 'dark';
+    const nextMode = get().mode === "dark" ? "light" : "dark";
     set({
       mode: nextMode,
       colors: COLORS[nextMode],

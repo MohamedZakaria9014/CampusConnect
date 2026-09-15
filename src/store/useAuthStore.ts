@@ -1,9 +1,9 @@
-import { create } from 'zustand';
-import { persist, createJSONStorage } from 'zustand/middleware';
-import { Session } from '@supabase/supabase-js';
-import { Profile } from '../types/models';
-import { fetchUserProfile, updateUserProfile } from '../services/api.auth';
-import { CustomStorageAdapter } from '../lib/supabase';
+import { create } from "zustand";
+import { persist, createJSONStorage } from "zustand/middleware";
+import { Session } from "@supabase/supabase-js";
+import { Profile } from "../types/models";
+import { fetchUserProfile, updateUserProfile } from "../services/api.auth";
+import { CustomStorageAdapter } from "../lib/supabase";
 
 interface AuthState {
   session: Session | null;
@@ -71,8 +71,8 @@ export const useAuthStore = create<AuthState>()(
       },
     }),
     {
-      name: 'campus-connect-auth-store',
+      name: "campus-connect-auth-store",
       storage: createJSONStorage(() => CustomStorageAdapter),
-    }
-  )
+    },
+  ),
 );

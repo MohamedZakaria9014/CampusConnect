@@ -1,17 +1,26 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import { ArrowLeft, GraduationCap } from 'lucide-react-native';
-import { useQuery } from '@tanstack/react-query';
-import { useThemeStore } from '../../../../src/store/useThemeStore';
-import { fetchUniversities, fetchTopStudents } from '../../../../src/services/api.explore';
-import { fetchPosts } from '../../../../src/services/api.posts';
-import { PostCard } from '../../../../src/components/features/PostCard';
-import { Avatar } from '../../../../src/components/ui/Avatar';
-import { TopStudentBadge } from '../../../../src/components/ui/TopStudentBadge';
-import { SPACING, RADIUS } from '../../../../src/constants/theme';
-import { queryKeys } from '../../../../src/constants/queryKeys';
+import React from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import { ArrowLeft, GraduationCap } from "lucide-react-native";
+import { useQuery } from "@tanstack/react-query";
+import { useThemeStore } from "../../../../src/store/useThemeStore";
+import {
+  fetchUniversities,
+  fetchTopStudents,
+} from "../../../../src/services/api.explore";
+import { fetchPosts } from "../../../../src/services/api.posts";
+import { PostCard } from "../../../../src/components/features/PostCard";
+import { Avatar } from "../../../../src/components/ui/Avatar";
+import { TopStudentBadge } from "../../../../src/components/ui/TopStudentBadge";
+import { SPACING, RADIUS } from "../../../../src/constants/theme";
+import { queryKeys } from "../../../../src/constants/queryKeys";
 
 export default function UniversityScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -23,7 +32,8 @@ export default function UniversityScreen() {
     queryFn: fetchUniversities,
   });
 
-  const university = universities?.find((u) => u.id === id) || universities?.[0];
+  const university =
+    universities?.find((u) => u.id === id) || universities?.[0];
 
   const { data: topStudents } = useQuery({
     queryKey: queryKeys.users.topStudents(id),
@@ -38,44 +48,92 @@ export default function UniversityScreen() {
   const insets = useSafeAreaInsets();
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background, paddingTop: insets.top }]}>
+    <View
+      style={[
+        styles.container,
+        { backgroundColor: colors.background, paddingTop: insets.top },
+      ]}
+    >
       <View style={[styles.topHeader, { borderColor: colors.border }]}>
         <TouchableOpacity
-          onPress={() => router.canGoBack() ? router.back() : router.replace('/(main)/explore' as any)}
+          onPress={() =>
+            router.canGoBack()
+              ? router.back()
+              : router.replace("/(main)/explore" as any)
+          }
           style={styles.iconBtn}
         >
           <ArrowLeft size={24} color={colors.text} />
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: colors.text }]}>{university?.short_name} Hub</Text>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>
+          {university?.short_name} Hub
+        </Text>
         <View style={{ width: 24 }} />
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
         {/* Banner & Logo Header */}
-        <View style={[styles.bannerCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <View style={[styles.uniIconBox, { backgroundColor: colors.primary }]}>
+        <View
+          style={[
+            styles.bannerCard,
+            { backgroundColor: colors.card, borderColor: colors.border },
+          ]}
+        >
+          <View
+            style={[styles.uniIconBox, { backgroundColor: colors.primary }]}
+          >
             <GraduationCap size={36} color="#FFFFFF" />
           </View>
-          <Text style={[styles.uniNameTitle, { color: colors.text }]}>{university?.name}</Text>
-          <Text style={[styles.uniLocationText, { color: colors.textSecondary }]}>{university?.location}</Text>
+          <Text style={[styles.uniNameTitle, { color: colors.text }]}>
+            {university?.name}
+          </Text>
+          <Text
+            style={[styles.uniLocationText, { color: colors.textSecondary }]}
+          >
+            {university?.location}
+          </Text>
         </View>
 
         {/* Top Students Section */}
         <View style={styles.sectionMargin}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Top Students ({topStudents?.length || 0})</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.studentsScroll}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>
+            Top Students ({topStudents?.length || 0})
+          </Text>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.studentsScroll}
+          >
             {topStudents?.map((student) => (
               <TouchableOpacity
                 key={student.id}
                 onPress={() => router.push(`/user/${student.id}` as any)}
-                style={[styles.studentPillCard, { backgroundColor: colors.surface, borderColor: colors.border }]}
+                style={[
+                  styles.studentPillCard,
+                  {
+                    backgroundColor: colors.surface,
+                    borderColor: colors.border,
+                  },
+                ]}
               >
-                <Avatar url={student.avatar_url} name={student.full_name} size={48} />
-                <Text style={[styles.studentPillName, { color: colors.text }]} numberOfLines={1}>
+                <Avatar
+                  url={student.avatar_url}
+                  name={student.full_name}
+                  size={48}
+                />
+                <Text
+                  style={[styles.studentPillName, { color: colors.text }]}
+                  numberOfLines={1}
+                >
                   {student.full_name}
                 </Text>
                 <TopStudentBadge size="sm" showText={false} />
-                <Text style={[styles.studentPillRep, { color: colors.textSecondary }]}>
+                <Text
+                  style={[
+                    styles.studentPillRep,
+                    { color: colors.textSecondary },
+                  ]}
+                >
                   {student.reputation} Rep
                 </Text>
               </TouchableOpacity>
@@ -85,7 +143,9 @@ export default function UniversityScreen() {
 
         {/* Recent Community Questions */}
         <View style={styles.sectionMargin}>
-          <Text style={[styles.sectionTitle, { color: colors.text }]}>Community Questions</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>
+            Community Questions
+          </Text>
           {posts?.map((post) => (
             <PostCard
               key={post.id}
@@ -104,9 +164,9 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   topHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingHorizontal: SPACING.lg,
     paddingVertical: SPACING.md,
     borderBottomWidth: 1,
@@ -116,7 +176,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 17,
-    fontWeight: '700',
+    fontWeight: "700",
   },
   scrollContent: {
     padding: SPACING.lg,
@@ -125,21 +185,21 @@ const styles = StyleSheet.create({
     padding: SPACING.xl,
     borderRadius: RADIUS.xl,
     borderWidth: 1,
-    alignItems: 'center',
+    alignItems: "center",
     marginBottom: SPACING.lg,
   },
   uniIconBox: {
     width: 64,
     height: 64,
     borderRadius: 32,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     marginBottom: SPACING.md,
   },
   uniNameTitle: {
     fontSize: 22,
-    fontWeight: '800',
-    textAlign: 'center',
+    fontWeight: "800",
+    textAlign: "center",
   },
   uniLocationText: {
     fontSize: 14,
@@ -150,33 +210,33 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 18,
-    fontWeight: '800',
+    fontWeight: "800",
     marginBottom: SPACING.md,
   },
   studentsScroll: {
-    flexDirection: 'row',
+    flexDirection: "row",
   },
   studentPillCard: {
     width: 110,
     padding: SPACING.md,
     borderRadius: RADIUS.lg,
     borderWidth: 1,
-    alignItems: 'center',
+    alignItems: "center",
     marginRight: 10,
   },
   studentPillName: {
     fontSize: 13,
-    fontWeight: '700',
+    fontWeight: "700",
     marginTop: 6,
-    textAlign: 'center',
+    textAlign: "center",
   },
   studentPillRep: {
     fontSize: 11,
     marginTop: 2,
   },
   courseRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     padding: SPACING.md,
     borderRadius: RADIUS.lg,
     borderWidth: 1,
@@ -188,7 +248,7 @@ const styles = StyleSheet.create({
   },
   courseCodeText: {
     fontSize: 14,
-    fontWeight: '700',
+    fontWeight: "700",
   },
   courseDeptText: {
     fontSize: 12,

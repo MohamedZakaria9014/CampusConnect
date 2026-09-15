@@ -1,4 +1,4 @@
-import * as ImageManipulator from 'expo-image-manipulator';
+import * as ImageManipulator from "expo-image-manipulator";
 
 export interface CompressionResult {
   uri: string;
@@ -14,7 +14,7 @@ export async function compressImage(uri: string): Promise<CompressionResult> {
     const result = await ImageManipulator.manipulateAsync(
       uri,
       [{ resize: { width: 1200 } }],
-      { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG }
+      { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG },
     );
     return {
       uri: result.uri,
@@ -22,7 +22,7 @@ export async function compressImage(uri: string): Promise<CompressionResult> {
       height: result.height,
     };
   } catch (error) {
-    console.warn('Image compression fallback to original URI:', error);
+    console.warn("Image compression fallback to original URI:", error);
     return { uri, width: 800, height: 600 };
   }
 }

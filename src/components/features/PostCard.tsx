@@ -1,19 +1,38 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Share, Alert } from 'react-native';
-import { Image } from 'expo-image';
-import { ThumbsUp, MessageSquare, Bookmark, Share2, Eye, CheckCircle2, Trash2 } from 'lucide-react-native';
-import { useRouter } from 'expo-router';
-import { Post } from '../../types/models';
-import { useThemeStore } from '../../store/useThemeStore';
-import { Avatar } from '../ui/Avatar';
-import { TopStudentBadge } from '../ui/TopStudentBadge';
-import { CodeBlock } from '../ui/CodeBlock';
-import { Card } from '../ui/Card';
-import { ImageViewerModal } from '../ui/ImageViewerModal';
-import { timeAgo, formatCount } from '../../utils/formatters';
-import { SPACING, RADIUS } from '../../constants/theme';
-import { togglePostLike, toggleSavePost, deletePost } from '../../services/api.posts';
-import { useAuthStore } from '../../store/useAuthStore';
+import React from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Share,
+  Alert,
+} from "react-native";
+import { Image } from "expo-image";
+import {
+  ThumbsUp,
+  MessageSquare,
+  Bookmark,
+  Share2,
+  Eye,
+  CheckCircle2,
+  Trash2,
+} from "lucide-react-native";
+import { useRouter } from "expo-router";
+import { Post } from "../../types/models";
+import { useThemeStore } from "../../store/useThemeStore";
+import { Avatar } from "../ui/Avatar";
+import { TopStudentBadge } from "../ui/TopStudentBadge";
+import { CodeBlock } from "../ui/CodeBlock";
+import { Card } from "../ui/Card";
+import { ImageViewerModal } from "../ui/ImageViewerModal";
+import { timeAgo, formatCount } from "../../utils/formatters";
+import { SPACING, RADIUS } from "../../constants/theme";
+import {
+  togglePostLike,
+  toggleSavePost,
+  deletePost,
+} from "../../services/api.posts";
+import { useAuthStore } from "../../store/useAuthStore";
 
 export interface PostCardProps {
   post: Post;
@@ -21,18 +40,33 @@ export interface PostCardProps {
   onDelete?: (postId: string) => void;
 }
 
-const PostCardComponent: React.FC<PostCardProps> = ({ post, onPress, onDelete }) => {
+const PostCardComponent: React.FC<PostCardProps> = ({
+  post,
+  onPress,
+  onDelete,
+}) => {
   const { colors } = useThemeStore();
   const router = useRouter();
   const user = useAuthStore((s) => s.user);
 
-  const [optimisticLike, setOptimisticLike] = React.useState<{ isLiked: boolean; delta: number } | null>(null);
-  const [optimisticSave, setOptimisticSave] = React.useState<boolean | null>(null);
+  const [optimisticLike, setOptimisticLike] = React.useState<{
+    isLiked: boolean;
+    delta: number;
+  } | null>(null);
+  const [optimisticSave, setOptimisticSave] = React.useState<boolean | null>(
+    null,
+  );
   const [fullImageUrl, setFullImageUrl] = React.useState<string | null>(null);
 
-  const isLiked = optimisticLike !== null ? optimisticLike.isLiked : (post.is_upvoted || false);
-  const likeCount = Math.max(0, (post.upvotes_count || 0) + (optimisticLike !== null ? optimisticLike.delta : 0));
-  const isSaved = optimisticSave !== null ? optimisticSave : (post.is_saved || false);
+  const isLiked =
+    optimisticLike !== null ? optimisticLike.isLiked : post.is_upvoted || false;
+  const likeCount = Math.max(
+    0,
+    (post.upvotes_count || 0) +
+      (optimisticLike !== null ? optimisticLike.delta : 0),
+  );
+  const isSaved =
+    optimisticSave !== null ? optimisticSave : post.is_saved || false;
 
   const author = post.author;
   const university = post.university || author?.university;
@@ -41,39 +75,48 @@ const PostCardComponent: React.FC<PostCardProps> = ({ post, onPress, onDelete })
   const handleDelete = (e: any) => {
     e.stopPropagation();
     Alert.alert(
-      'Delete Question',
-      'Are you sure you want to delete this question? This action cannot be undone.',
+      "Delete Question",
+      "Are you sure you want to delete this question? This action cannot be undone.",
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: "Cancel", style: "cancel" },
         {
-          text: 'Delete',
-          style: 'destructive',
+          text: "Delete",
+          style: "destructive",
           onPress: async () => {
             try {
               await deletePost(post.id);
               if (onDelete) onDelete(post.id);
             } catch {
-              Alert.alert('Error', 'Could not delete question. Please try again.');
+              Alert.alert(
+                "Error",
+                "Could not delete question. Please try again.",
+              );
             }
           },
         },
-      ]
+      ],
     );
   };
 
   const handleLike = async (e: any) => {
     e.stopPropagation();
     if (!user) {
-      Alert.alert('Sign In Required', 'Please sign in to upvote questions.', [
-        { text: 'Sign In', onPress: () => router.push('/(auth)/login') },
-        { text: 'Cancel', style: 'cancel' },
+      Alert.alert("Sign In Required", "Please sign in to upvote questions.", [
+        { text: "Sign In", onPress: () => router.push("/(auth)/login") },
+        { text: "Cancel", style: "cancel" },
       ]);
       return;
     }
 
     const prevState = isLiked;
     const nextState = !prevState;
-    const delta = nextState ? (post.is_upvoted ? 0 : 1) : (post.is_upvoted ? -1 : 0);
+    const delta = nextState
+      ? post.is_upvoted
+        ? 0
+        : 1
+      : post.is_upvoted
+        ? -1
+        : 0;
 
     setOptimisticLike({ isLiked: nextState, delta });
 
@@ -81,16 +124,16 @@ const PostCardComponent: React.FC<PostCardProps> = ({ post, onPress, onDelete })
       await togglePostLike(post.id, user.id, prevState);
     } catch {
       setOptimisticLike(null);
-      Alert.alert('Error', 'Could not update upvote. Please try again.');
+      Alert.alert("Error", "Could not update upvote. Please try again.");
     }
   };
 
   const handleSave = async (e: any) => {
     e.stopPropagation();
     if (!user) {
-      Alert.alert('Sign In Required', 'Please sign in to save questions.', [
-        { text: 'Sign In', onPress: () => router.push('/(auth)/login') },
-        { text: 'Cancel', style: 'cancel' },
+      Alert.alert("Sign In Required", "Please sign in to save questions.", [
+        { text: "Sign In", onPress: () => router.push("/(auth)/login") },
+        { text: "Cancel", style: "cancel" },
       ]);
       return;
     }
@@ -103,7 +146,7 @@ const PostCardComponent: React.FC<PostCardProps> = ({ post, onPress, onDelete })
       await toggleSavePost(post.id, user.id, prevState);
     } catch {
       setOptimisticSave(null);
-      Alert.alert('Error', 'Could not bookmark question. Please try again.');
+      Alert.alert("Error", "Could not bookmark question. Please try again.");
     }
   };
 
@@ -115,7 +158,7 @@ const PostCardComponent: React.FC<PostCardProps> = ({ post, onPress, onDelete })
         message: `Check out this academic question on Campus Connect: "${post.title}"`,
       });
     } catch (err) {
-      console.warn('Share error:', err);
+      console.warn("Share error:", err);
     }
   };
 
@@ -132,26 +175,34 @@ const PostCardComponent: React.FC<PostCardProps> = ({ post, onPress, onDelete })
         {/* Header: Author & Context */}
         <View style={styles.header}>
           <TouchableOpacity onPress={handleUserPress} style={styles.authorRow}>
-            <Avatar url={author?.avatar_url} name={author?.full_name || 'Student'} size={42} />
+            <Avatar
+              url={author?.avatar_url}
+              name={author?.full_name || "Student"}
+              size={42}
+            />
             <View style={styles.authorDetails}>
               <View style={styles.nameBadgeRow}>
                 <Text style={[styles.authorName, { color: colors.text }]}>
-                  {author?.full_name || 'Anonymous Student'}
+                  {author?.full_name || "Anonymous Student"}
                 </Text>
                 {author?.is_top_student && <TopStudentBadge size="sm" />}
               </View>
 
               <Text style={[styles.metaText, { color: colors.textSecondary }]}>
-                {`@${author?.username || 'student'}`}
-                {university?.short_name || university?.name ? ` • ${university.short_name || university.name}` : ''}
-                {author?.major ? ` • ${author.major}` : ''}
-                {author?.year ? ` • ${author.year}` : ''}
+                {`@${author?.username || "student"}`}
+                {university?.short_name || university?.name
+                  ? ` • ${university.short_name || university.name}`
+                  : ""}
+                {author?.major ? ` • ${author.major}` : ""}
+                {author?.year ? ` • ${author.year}` : ""}
               </Text>
             </View>
           </TouchableOpacity>
 
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-            <Text style={[styles.timeAgo, { color: colors.textMuted }]}>{timeAgo(post.created_at)}</Text>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+            <Text style={[styles.timeAgo, { color: colors.textMuted }]}>
+              {timeAgo(post.created_at)}
+            </Text>
             {isMyPost && (
               <TouchableOpacity onPress={handleDelete} style={{ padding: 4 }}>
                 <Trash2 size={16} color={colors.error} />
@@ -163,32 +214,54 @@ const PostCardComponent: React.FC<PostCardProps> = ({ post, onPress, onDelete })
         {/* Course Pill & Subject Category */}
         <View style={styles.pillRow}>
           {post.course_code && (
-            <View style={[styles.coursePill, { backgroundColor: colors.primaryLight + '20' }]}>
+            <View
+              style={[
+                styles.coursePill,
+                { backgroundColor: colors.primaryLight + "20" },
+              ]}
+            >
               <Text style={[styles.coursePillText, { color: colors.primary }]}>
                 {post.course_code}
               </Text>
             </View>
           )}
-          <View style={[styles.categoryPill, { backgroundColor: colors.surfaceSecondary }]}>
-            <Text style={[styles.categoryPillText, { color: colors.textSecondary }]}>{post.category}</Text>
+          <View
+            style={[
+              styles.categoryPill,
+              { backgroundColor: colors.surfaceSecondary },
+            ]}
+          >
+            <Text
+              style={[styles.categoryPillText, { color: colors.textSecondary }]}
+            >
+              {post.category}
+            </Text>
           </View>
           {post.is_solved && (
-            <View style={[styles.solvedPill, { backgroundColor: '#10B98120' }]}>
+            <View style={[styles.solvedPill, { backgroundColor: "#10B98120" }]}>
               <CheckCircle2 size={12} color="#10B981" />
-              <Text style={[styles.solvedPillText, { color: '#10B981' }]}>Solved</Text>
+              <Text style={[styles.solvedPillText, { color: "#10B981" }]}>
+                Solved
+              </Text>
             </View>
           )}
         </View>
 
         {/* Title & Body Content */}
         <Text style={[styles.title, { color: colors.text }]}>{post.title}</Text>
-        <Text style={[styles.content, { color: colors.textSecondary }]} numberOfLines={3}>
+        <Text
+          style={[styles.content, { color: colors.textSecondary }]}
+          numberOfLines={3}
+        >
           {post.content}
         </Text>
 
         {/* Code Snippet Attachment if present */}
         {post.code_snippet ? (
-          <CodeBlock code={post.code_snippet} language={post.code_language || 'code'} />
+          <CodeBlock
+            code={post.code_snippet}
+            language={post.code_language || "code"}
+          />
         ) : null}
 
         {/* Image Attachment if present */}
@@ -219,11 +292,22 @@ const PostCardComponent: React.FC<PostCardProps> = ({ post, onPress, onDelete })
         {/* Footer Actions: Upvote, Answers, Save, Share */}
         <View style={[styles.footer, { borderColor: colors.border }]}>
           <TouchableOpacity
-            style={[styles.actionBtn, isLiked && { backgroundColor: colors.primary + '15' }]}
+            style={[
+              styles.actionBtn,
+              isLiked && { backgroundColor: colors.primary + "15" },
+            ]}
             onPress={handleLike}
           >
-            <ThumbsUp size={16} color={isLiked ? colors.primary : colors.icon} />
-            <Text style={[styles.actionText, { color: isLiked ? colors.primary : colors.textSecondary }]}>
+            <ThumbsUp
+              size={16}
+              color={isLiked ? colors.primary : colors.icon}
+            />
+            <Text
+              style={[
+                styles.actionText,
+                { color: isLiked ? colors.primary : colors.textSecondary },
+              ]}
+            >
               {formatCount(likeCount)}
             </Text>
           </TouchableOpacity>
@@ -245,7 +329,11 @@ const PostCardComponent: React.FC<PostCardProps> = ({ post, onPress, onDelete })
           <View style={styles.flexSpacer} />
 
           <TouchableOpacity style={styles.iconBtn} onPress={handleSave}>
-            <Bookmark size={18} color={isSaved ? colors.warning : colors.icon} fill={isSaved ? colors.warning : 'transparent'} />
+            <Bookmark
+              size={18}
+              color={isSaved ? colors.warning : colors.icon}
+              fill={isSaved ? colors.warning : "transparent"}
+            />
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.iconBtn} onPress={handleShare}>
@@ -262,14 +350,14 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.md,
   },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
     marginBottom: SPACING.xs,
   },
   authorRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     flex: 1,
   },
   authorDetails: {
@@ -277,14 +365,14 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   nameBadgeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flexWrap: 'wrap',
+    flexDirection: "row",
+    alignItems: "center",
+    flexWrap: "wrap",
     gap: 6,
   },
   authorName: {
     fontSize: 15,
-    fontWeight: '700',
+    fontWeight: "700",
   },
   metaText: {
     fontSize: 12,
@@ -295,8 +383,8 @@ const styles = StyleSheet.create({
     marginLeft: 6,
   },
   pillRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 8,
     marginVertical: 6,
   },
@@ -307,7 +395,7 @@ const styles = StyleSheet.create({
   },
   coursePillText: {
     fontSize: 11,
-    fontWeight: '700',
+    fontWeight: "700",
   },
   categoryPill: {
     paddingHorizontal: 8,
@@ -316,11 +404,11 @@ const styles = StyleSheet.create({
   },
   categoryPillText: {
     fontSize: 11,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   solvedPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: RADIUS.sm,
@@ -328,11 +416,11 @@ const styles = StyleSheet.create({
   },
   solvedPillText: {
     fontSize: 11,
-    fontWeight: '700',
+    fontWeight: "700",
   },
   title: {
     fontSize: 17,
-    fontWeight: '700',
+    fontWeight: "700",
     marginVertical: 4,
     lineHeight: 22,
   },
@@ -342,22 +430,22 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.xs,
   },
   postImage: {
-    width: '100%',
+    width: "100%",
     height: 180,
     borderRadius: RADIUS.md,
     marginVertical: SPACING.xs,
-    resizeMode: 'cover',
+    resizeMode: "cover",
   },
   footer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingTop: SPACING.xs + 4,
     borderTopWidth: 1,
     marginTop: SPACING.xs,
   },
   actionBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: RADIUS.sm,
@@ -365,7 +453,7 @@ const styles = StyleSheet.create({
   },
   actionText: {
     fontSize: 13,
-    fontWeight: '600',
+    fontWeight: "600",
     marginLeft: 4,
   },
   flexSpacer: {

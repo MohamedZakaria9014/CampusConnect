@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 import {
   View,
   Text,
@@ -7,10 +7,10 @@ import {
   TouchableOpacity,
   RefreshControl,
   Alert,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { useRouter } from "expo-router";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowLeft,
   Bell,
@@ -22,20 +22,20 @@ import {
   HelpCircle,
   Trash2,
   X,
-} from 'lucide-react-native';
-import { useThemeStore } from '../../src/store/useThemeStore';
-import { useAuthStore } from '../../src/store/useAuthStore';
+} from "lucide-react-native";
+import { useThemeStore } from "../../src/store/useThemeStore";
+import { useAuthStore } from "../../src/store/useAuthStore";
 import {
   fetchNotifications,
   markNotificationAsRead,
   markAllNotificationsAsRead,
   clearAllNotifications,
   deleteNotification,
-} from '../../src/services/api.notifications';
-import { timeAgo } from '../../src/utils/formatters';
-import { SPACING, RADIUS } from '../../src/constants/theme';
-import { NotificationItem } from '../../src/types/models';
-import { queryKeys } from '../../src/constants/queryKeys';
+} from "../../src/services/api.notifications";
+import { timeAgo } from "../../src/utils/formatters";
+import { SPACING, RADIUS } from "../../src/constants/theme";
+import { NotificationItem } from "../../src/types/models";
+import { queryKeys } from "../../src/constants/queryKeys";
 
 export default function NotificationsScreen() {
   const { colors } = useThemeStore();
@@ -43,16 +43,21 @@ export default function NotificationsScreen() {
   const user = useAuthStore((s) => s.user);
   const queryClient = useQueryClient();
 
-  const { data: notifications, isLoading, refetch } = useQuery({
+  const {
+    data: notifications,
+    isLoading,
+    refetch,
+  } = useQuery({
     queryKey: queryKeys.notifications.list(user?.id),
-    queryFn: () => (user?.id ? fetchNotifications(user.id) : Promise.resolve([])),
+    queryFn: () =>
+      user?.id ? fetchNotifications(user.id) : Promise.resolve([]),
     enabled: !!user?.id,
   });
 
   const handleNotificationPress = async (item: NotificationItem) => {
     await markNotificationAsRead(item.id);
     refetch();
-    if (item.conversation_id || item.type === 'new_message') {
+    if (item.conversation_id || item.type === "new_message") {
       router.push(`/(main)/messages/${item.actor_id}` as any);
     } else if (item.post_id) {
       router.push(`/(main)/post/${item.post_id}` as any);
@@ -74,25 +79,31 @@ export default function NotificationsScreen() {
   const handleClearAll = () => {
     if (!user?.id || !notifications || notifications.length === 0) return;
     Alert.alert(
-      'Clear Notifications',
-      'Are you sure you want to clear all your notifications? This cannot be undone.',
+      "Clear Notifications",
+      "Are you sure you want to clear all your notifications? This cannot be undone.",
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: "Cancel", style: "cancel" },
         {
-          text: 'Clear All',
-          style: 'destructive',
+          text: "Clear All",
+          style: "destructive",
           onPress: async () => {
             try {
               // Optimistically clear query cache
-              queryClient.setQueryData(queryKeys.notifications.list(user.id), []);
+              queryClient.setQueryData(
+                queryKeys.notifications.list(user.id),
+                [],
+              );
               await clearAllNotifications(user.id);
             } catch (err: any) {
-              Alert.alert('Error', err.message || 'Failed to clear notifications');
+              Alert.alert(
+                "Error",
+                err.message || "Failed to clear notifications",
+              );
               refetch();
             }
           },
         },
-      ]
+      ],
     );
   };
 
@@ -102,30 +113,31 @@ export default function NotificationsScreen() {
       // Optimistically remove from query cache
       queryClient.setQueryData(
         queryKeys.notifications.list(user.id),
-        (prev: NotificationItem[] | undefined) => (prev || []).filter((n) => n.id !== notificationId)
+        (prev: NotificationItem[] | undefined) =>
+          (prev || []).filter((n) => n.id !== notificationId),
       );
       await deleteNotification(notificationId, user.id);
     } catch (err: any) {
-      console.warn('Failed to delete notification:', err);
+      console.warn("Failed to delete notification:", err);
       refetch();
     }
   };
 
-  const getNotifIcon = (type: NotificationItem['type']) => {
+  const getNotifIcon = (type: NotificationItem["type"]) => {
     switch (type) {
-      case 'new_post':
+      case "new_post":
         return <HelpCircle size={18} color="#6366F1" />;
-      case 'new_message':
+      case "new_message":
         return <MessageSquare size={18} color="#0EA5E9" />;
-      case 'answer_best':
+      case "answer_best":
         return <CheckCircle2 size={18} color="#10B981" />;
-      case 'badge_earned':
+      case "badge_earned":
         return <Award size={18} color="#6366F1" />;
-      case 'answer_upvoted':
+      case "answer_upvoted":
         return <ThumbsUp size={18} color="#0EA5E9" />;
-      case 'new_follower':
+      case "new_follower":
         return <UserPlus size={18} color="#EC4899" />;
-      case 'new_answer':
+      case "new_answer":
       default:
         return <MessageSquare size={18} color="#F59E0B" />;
     }
@@ -135,27 +147,57 @@ export default function NotificationsScreen() {
   const hasNotifications = (notifications || []).length > 0;
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+    <SafeAreaView
+      style={[styles.container, { backgroundColor: colors.background }]}
+    >
       <View style={[styles.topHeader, { borderColor: colors.border }]}>
         <View style={styles.leftHeaderRow}>
           <TouchableOpacity
-            onPress={() => (router.canGoBack() ? router.back() : router.replace('/(main)/(tabs)'))}
+            onPress={() =>
+              router.canGoBack()
+                ? router.back()
+                : router.replace("/(main)/(tabs)")
+            }
             style={styles.iconBtn}
           >
             <ArrowLeft size={24} color={colors.text} />
           </TouchableOpacity>
-          <Text style={[styles.headerTitle, { color: colors.text }]}>Notifications</Text>
+          <Text style={[styles.headerTitle, { color: colors.text }]}>
+            Notifications
+          </Text>
         </View>
 
         {hasNotifications ? (
           <View style={styles.headerActions}>
             {unreadCount > 0 && (
-              <TouchableOpacity onPress={handleMarkAllRead} style={styles.headerActionBtn}>
-                <Text style={{ fontSize: 13, fontWeight: '700', color: colors.primary }}>Mark read</Text>
+              <TouchableOpacity
+                onPress={handleMarkAllRead}
+                style={styles.headerActionBtn}
+              >
+                <Text
+                  style={{
+                    fontSize: 13,
+                    fontWeight: "700",
+                    color: colors.primary,
+                  }}
+                >
+                  Mark read
+                </Text>
               </TouchableOpacity>
             )}
-            <TouchableOpacity onPress={handleClearAll} style={styles.headerActionBtn}>
-              <Text style={{ fontSize: 13, fontWeight: '600', color: colors.error || '#EF4444' }}>Clear all</Text>
+            <TouchableOpacity
+              onPress={handleClearAll}
+              style={styles.headerActionBtn}
+            >
+              <Text
+                style={{
+                  fontSize: 13,
+                  fontWeight: "600",
+                  color: colors.error || "#EF4444",
+                }}
+              >
+                Clear all
+              </Text>
             </TouchableOpacity>
           </View>
         ) : (
@@ -173,7 +215,9 @@ export default function NotificationsScreen() {
             style={[
               styles.notifCard,
               {
-                backgroundColor: item.is_read ? colors.card : colors.primaryLight + '10',
+                backgroundColor: item.is_read
+                  ? colors.card
+                  : colors.primaryLight + "10",
                 borderColor: colors.border,
               },
             ]}
@@ -181,9 +225,15 @@ export default function NotificationsScreen() {
             <View style={styles.iconWrapper}>{getNotifIcon(item.type)}</View>
 
             <View style={styles.notifMeta}>
-              <Text style={[styles.notifTitle, { color: colors.text }]}>{item.title}</Text>
-              <Text style={[styles.notifBody, { color: colors.textSecondary }]}>{item.body}</Text>
-              <Text style={[styles.notifTime, { color: colors.textMuted }]}>{timeAgo(item.created_at)}</Text>
+              <Text style={[styles.notifTitle, { color: colors.text }]}>
+                {item.title}
+              </Text>
+              <Text style={[styles.notifBody, { color: colors.textSecondary }]}>
+                {item.body}
+              </Text>
+              <Text style={[styles.notifTime, { color: colors.textMuted }]}>
+                {timeAgo(item.created_at)}
+              </Text>
             </View>
 
             <TouchableOpacity
@@ -199,11 +249,19 @@ export default function NotificationsScreen() {
           </TouchableOpacity>
         )}
         contentContainerStyle={styles.listContent}
-        refreshControl={<RefreshControl refreshing={isLoading} onRefresh={refetch} tintColor={colors.primary} />}
+        refreshControl={
+          <RefreshControl
+            refreshing={isLoading}
+            onRefresh={refetch}
+            tintColor={colors.primary}
+          />
+        }
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
             <Bell size={40} color={colors.textMuted} />
-            <Text style={[styles.emptyTitle, { color: colors.text }]}>All caught up!</Text>
+            <Text style={[styles.emptyTitle, { color: colors.text }]}>
+              All caught up!
+            </Text>
             <Text style={[styles.emptySub, { color: colors.textSecondary }]}>
               You have no new notifications right now.
             </Text>
@@ -219,9 +277,9 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   topHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingHorizontal: SPACING.lg,
     paddingVertical: SPACING.md,
     borderBottomWidth: 1,
@@ -230,17 +288,17 @@ const styles = StyleSheet.create({
     padding: 4,
   },
   leftHeaderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 8,
   },
   headerTitle: {
     fontSize: 17,
-    fontWeight: '700',
+    fontWeight: "700",
   },
   headerActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 12,
   },
   headerActionBtn: {
@@ -250,14 +308,14 @@ const styles = StyleSheet.create({
   deleteBtn: {
     padding: 6,
     marginLeft: 6,
-    alignSelf: 'center',
+    alignSelf: "center",
   },
   listContent: {
     padding: SPACING.lg,
   },
   notifCard: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
+    flexDirection: "row",
+    alignItems: "flex-start",
     padding: SPACING.md,
     borderRadius: RADIUS.lg,
     borderWidth: 1,
@@ -273,7 +331,7 @@ const styles = StyleSheet.create({
   },
   notifTitle: {
     fontSize: 15,
-    fontWeight: '700',
+    fontWeight: "700",
   },
   notifBody: {
     fontSize: 13,
@@ -285,18 +343,18 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   emptyContainer: {
-    alignItems: 'center',
+    alignItems: "center",
     padding: SPACING.xxl,
     marginTop: SPACING.xl,
   },
   emptyTitle: {
     fontSize: 18,
-    fontWeight: '700',
+    fontWeight: "700",
     marginTop: SPACING.md,
   },
   emptySub: {
     fontSize: 13,
-    textAlign: 'center',
+    textAlign: "center",
     marginTop: 4,
   },
 });

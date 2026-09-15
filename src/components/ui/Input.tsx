@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 import {
   View,
   Text,
@@ -6,9 +6,9 @@ import {
   StyleSheet,
   TextInputProps,
   ViewStyle,
-} from 'react-native';
-import { useThemeStore } from '../../store/useThemeStore';
-import { SPACING, RADIUS } from '../../constants/theme';
+} from "react-native";
+import { useThemeStore } from "../../store/useThemeStore";
+import { SPACING, RADIUS } from "../../constants/theme";
 
 export interface InputProps extends TextInputProps {
   label?: string;
@@ -32,7 +32,9 @@ export const Input: React.FC<InputProps> = ({
 
   return (
     <View style={[styles.container, containerStyle]}>
-      {label && <Text style={[styles.label, { color: colors.text }]}>{label}</Text>}
+      {label && (
+        <Text style={[styles.label, { color: colors.text }]}>{label}</Text>
+      )}
       <View
         style={[
           styles.inputWrapper,
@@ -44,17 +46,15 @@ export const Input: React.FC<InputProps> = ({
       >
         {iconPrefix && <View style={styles.prefix}>{iconPrefix}</View>}
         <TextInput
-          style={[
-            styles.input,
-            { color: colors.text },
-            style,
-          ]}
+          style={[styles.input, { color: colors.text }, style]}
           placeholderTextColor={placeholderTextColor || colors.textSecondary}
           {...rest}
         />
         {iconSuffix && <View style={styles.suffix}>{iconSuffix}</View>}
       </View>
-      {error && <Text style={[styles.error, { color: colors.error }]}>{error}</Text>}
+      {error && (
+        <Text style={[styles.error, { color: colors.error }]}>{error}</Text>
+      )}
     </View>
   );
 };
@@ -65,12 +65,12 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 13,
-    fontWeight: '600',
+    fontWeight: "600",
     marginBottom: 6,
   },
   inputWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     borderWidth: 1,
     borderRadius: RADIUS.md,
     paddingHorizontal: SPACING.md,

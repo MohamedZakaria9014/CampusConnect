@@ -1,27 +1,30 @@
-import { Platform } from 'react-native';
-import { isRunningInExpoGo } from 'expo';
-import Constants from 'expo-constants';
+import { Platform } from "react-native";
+import { isRunningInExpoGo } from "expo";
+import Constants from "expo-constants";
 
-let notificationsModule: typeof import('expo-notifications') | null = null;
+let notificationsModule: typeof import("expo-notifications") | null = null;
 let isHandlerInitialized = false;
 
-function getNotificationsModule(): typeof import('expo-notifications') | null {
-  if (Platform.OS === 'web') {
+function getNotificationsModule(): typeof import("expo-notifications") | null {
+  if (Platform.OS === "web") {
     return null;
   }
 
   // In Expo Go on Android (SDK 53+), remote push notifications were removed.
   // Importing or invoking push listeners throws synchronously in Expo Go.
-  if (Platform.OS === 'android' && isRunningInExpoGo()) {
+  if (Platform.OS === "android" && isRunningInExpoGo()) {
     return null;
   }
 
   if (!notificationsModule) {
     try {
-      notificationsModule = require('expo-notifications');
+      notificationsModule = require("expo-notifications");
     } catch (error) {
       if (__DEV__) {
-        console.warn('[notifications] expo-notifications is unavailable:', error);
+        console.warn(
+          "[notifications] expo-notifications is unavailable:",
+          error,
+        );
       }
       return null;
     }
@@ -47,13 +50,15 @@ function getNotificationsModule(): typeof import('expo-notifications') | null {
   return notificationsModule;
 }
 
-export async function registerForPushNotificationsAsync(): Promise<string | null> {
-  if (Platform.OS === 'web') {
+export async function registerForPushNotificationsAsync(): Promise<
+  string | null
+> {
+  if (Platform.OS === "web") {
     return null;
   }
 
   // Remote push notifications are not supported in Expo Go on Android
-  if (Platform.OS === 'android' && isRunningInExpoGo()) {
+  if (Platform.OS === "android" && isRunningInExpoGo()) {
     return null;
   }
 
@@ -64,11 +69,11 @@ export async function registerForPushNotificationsAsync(): Promise<string | null
 
   try {
     const settings = await Notifications.getPermissionsAsync();
-    let granted = settings.granted || settings.status === 'granted';
+    let granted = settings.granted || settings.status === "granted";
 
     if (!granted) {
       const request = await Notifications.requestPermissionsAsync();
-      granted = request.granted || request.status === 'granted';
+      granted = request.granted || request.status === "granted";
     }
 
     if (!granted) {
@@ -82,22 +87,24 @@ export async function registerForPushNotificationsAsync(): Promise<string | null
 
     if (projectId) {
       try {
-        const pushTokenData = await Notifications.getExpoPushTokenAsync({ projectId });
+        const pushTokenData = await Notifications.getExpoPushTokenAsync({
+          projectId,
+        });
         token = pushTokenData.data;
       } catch (error) {
         if (__DEV__) {
-          console.warn('Error fetching Expo Push Token:', error);
+          console.warn("Error fetching Expo Push Token:", error);
         }
       }
     }
 
-    if (Platform.OS === 'android') {
+    if (Platform.OS === "android") {
       try {
-        await Notifications.setNotificationChannelAsync('default', {
-          name: 'default',
+        await Notifications.setNotificationChannelAsync("default", {
+          name: "default",
           importance: Notifications.AndroidImportance.MAX,
           vibrationPattern: [0, 250, 250, 250],
-          lightColor: '#6366F1',
+          lightColor: "#6366F1",
         });
       } catch {
         // Ignored on unsupported environments
@@ -107,7 +114,7 @@ export async function registerForPushNotificationsAsync(): Promise<string | null
     return token;
   } catch (error) {
     if (__DEV__) {
-      console.warn('registerForPushNotificationsAsync error:', error);
+      console.warn("registerForPushNotificationsAsync error:", error);
     }
     return null;
   }
@@ -129,13 +136,13 @@ export async function scheduleLocalNotification(
         title,
         body,
         data,
-        sound: 'default',
+        sound: "default",
       },
       trigger: null, // Send immediately
     });
   } catch (error) {
     if (__DEV__) {
-      console.warn('Error scheduling local notification:', error);
+      console.warn("Error scheduling local notification:", error);
     }
   }
 }

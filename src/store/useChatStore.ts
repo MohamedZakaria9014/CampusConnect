@@ -1,11 +1,14 @@
-import { create } from 'zustand';
+import { create } from "zustand";
 
 interface ChatState {
   activeConversationId: string | null;
   activeChatUserId: string | null;
   unreadCount: number;
   typingUsers: Record<string, boolean>; // convId -> isTyping
-  setActiveConversation: (convId: string | null, targetUserId?: string | null) => void;
+  setActiveConversation: (
+    convId: string | null,
+    targetUserId?: string | null,
+  ) => void;
   setUnreadCount: (count: number) => void;
   setTyping: (convId: string, isTyping: boolean) => void;
 }
