@@ -108,6 +108,17 @@ const PostCardComponent: React.FC<PostCardProps> = ({
       return;
     }
 
+    const isAuthor =
+      (post.author?.id && post.author.id === user.id) ||
+      post.author_id === user.id;
+    if (isAuthor) {
+      Alert.alert(
+        "Action Not Allowed",
+        "You are not allowed to upvote your own post.",
+      );
+      return;
+    }
+
     const prevState = isLiked;
     const nextState = !prevState;
     const delta = nextState

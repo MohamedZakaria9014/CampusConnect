@@ -89,25 +89,26 @@ export async function voteAnswer(
   userId: string,
   voteType: 1 | -1 | 0,
 ): Promise<void> {
-  if (voteType === 0) {
-    const { error } = await supabase
+  // Always remove existing vote first (compatible with existing DELETE RLS policy and trigger)
+  const { error: delError } = await supabase
+    .from("comment_votes")
+    .delete()
+    .match({ comment_id: commentId, user_id: userId });
+
+  if (delError) {
+    console.error("Error deleting answer vote:", delError.message);
+    throw delError;
+  }
+
+  // If new vote is upvote (+1) or downvote (-1), insert it (compatible with existing INSERT RLS policy and trigger)
+  if (voteType !== 0) {
+    const { error: insError } = await supabase
       .from("comment_votes")
-      .delete()
-      .match({ comment_id: commentId, user_id: userId });
-    if (error) {
-      console.error("Error deleting answer vote:", error.message);
-      throw error;
-    }
-  } else {
-    const { error } = await supabase
-      .from("comment_votes")
-      .upsert(
-        { comment_id: commentId, user_id: userId, vote_type: voteType },
-        { onConflict: "comment_id,user_id" },
-      );
-    if (error) {
-      console.error("Error upserting answer vote:", error.message);
-      throw error;
+      .insert({ comment_id: commentId, user_id: userId, vote_type: voteType });
+
+    if (insError) {
+      console.error("Error inserting answer vote:", insError.message);
+      throw insError;
     }
   }
 }

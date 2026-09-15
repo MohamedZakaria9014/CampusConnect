@@ -66,6 +66,16 @@ const AnswerCardComponent: React.FC<AnswerCardProps> = ({
       return;
     }
 
+    const isAuthor =
+      (author?.id && author.id === user.id) || answer.author_id === user.id;
+    if (isAuthor) {
+      Alert.alert(
+        "Action Not Allowed",
+        "You are not allowed to upvote or downvote your own comment.",
+      );
+      return;
+    }
+
     const prevVote = voteState;
     const nextVote = prevVote === targetVote ? 0 : targetVote;
     const initialVote = answer.user_vote || 0;
